@@ -1,36 +1,149 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# blihops-admin
 
-## Getting Started
+Internal administration frontend for BlihOps. This repository currently
+provides the application and engineering foundation; administrative features
+and external integrations will be added as their requirements are defined.
 
-First, run the development server:
+## Status
+
+The project is an early Next.js scaffold with its team workflow, quality gates,
+and dependency policies configured. The generated starter page remains in place
+until the first product feature is implemented.
+
+## Stack
+
+| Layer           | Choice                |
+| --------------- | --------------------- |
+| Framework       | Next.js 16 App Router |
+| UI runtime      | React 19              |
+| Language        | TypeScript 5          |
+| Styling         | Tailwind CSS 4        |
+| Linting         | ESLint 9              |
+| Formatting      | Prettier 3            |
+| Package manager | pnpm 11 only          |
+| Git hooks       | Husky and lint-staged |
+| CI              | GitHub Actions        |
+
+## Requirements
+
+| Tool    | Version                   |
+| ------- | ------------------------- |
+| Node.js | `24.18.0`                 |
+| pnpm    | `11.17.0`                 |
+| Git     | Current supported release |
+
+Node and pnpm requirements are enforced by `.nvmrc`, `package.json`, Corepack,
+and `pnpm-workspace.yaml`.
+
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+git clone https://github.com/blih-tech/blihops-admin.git
+cd blihops-admin
+
+npm install --global corepack@latest
+corepack enable pnpm
+
+pnpm install --frozen-lockfile
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+On Windows, `corepack enable pnpm` may require an Administrator PowerShell.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open [http://localhost:3000](http://localhost:3000).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Variables
 
-## Learn More
+Local environment files are ignored by Git. `.env.example` is the tracked
+template and must contain placeholders only.
 
-To learn more about Next.js, take a look at the following resources:
+When a feature introduces environment variables, create a local file from the
+template:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+cp .env.example .env.local
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+PowerShell equivalent:
 
-## Deploy on Vercel
+```powershell
+Copy-Item .env.example .env.local
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Never commit `.env`, `.env.local`, production credentials, tokens, or private
+keys. CI rejects tracked environment files other than `.env.example`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Commands
+
+| Command             | Purpose                                      |
+| ------------------- | -------------------------------------------- |
+| `pnpm dev`          | Start the development server                 |
+| `pnpm build`        | Create a production build                    |
+| `pnpm start`        | Run the production build                     |
+| `pnpm lint`         | Run ESLint                                   |
+| `pnpm typecheck`    | Run TypeScript without emitting files        |
+| `pnpm format`       | Format supported files with Prettier         |
+| `pnpm format:check` | Check formatting without changing files      |
+| `pnpm check`        | Run lint, typecheck, format check, and build |
+
+## Repository Structure
+
+```text
+blihops-admin/
+|-- .github/
+|   |-- workflows/ci.yml        # Pull request and main quality gate
+|   |-- CODEOWNERS              # Automatic review ownership
+|   `-- PULL_REQUEST_TEMPLATE.md
+|-- .husky/                     # Commit message, pre-commit, and pre-push hooks
+|-- public/                     # Static assets
+|-- src/
+|   `-- app/                    # App Router layouts, pages, and global styles
+|-- .env.example               # Environment variable template
+|-- pnpm-workspace.yaml        # pnpm policy and dependency overrides
+`-- package.json
+```
+
+Add new top-level source directories only when the application needs them. Keep
+route composition in `src/app` and move reusable code into focused directories
+as the product grows.
+
+## Development Workflow
+
+The repository follows GitHub Flow:
+
+1. Update local `main`.
+2. Create a short branch using an allowed prefix.
+3. Commit using Conventional Commits.
+4. Push the branch and open a pull request into `main`.
+5. Merge only after the `quality` check and required reviews pass.
+
+Allowed branch prefixes are `feature/`, `fix/`, `chore/`, `docs/`, `ci/`, and
+`hotfix/`.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the complete workflow.
+
+## Quality And Security
+
+Local hooks provide fast feedback:
+
+| Hook         | Check                               |
+| ------------ | ----------------------------------- |
+| `pre-commit` | ESLint and Prettier on staged files |
+| `commit-msg` | Conventional Commit format          |
+| `pre-push`   | Branch naming convention            |
+
+GitHub Actions is the authoritative gate. CI verifies the lockfile policy,
+environment-file policy, high-severity dependency audit, linting, type safety,
+formatting, and production build.
+
+Only `pnpm-lock.yaml` is allowed. Do not create or commit npm, Yarn, or Bun
+lockfiles.
+
+## Related Repository
+
+- [`blihops-web`](https://github.com/blih-tech/blihops-web): public BlihOps
+  marketing website.
+
+## Contributing
+
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) before starting work.
