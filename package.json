@@ -7,14 +7,25 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm build",
-    "preinstall": "node -e \"const ua = process.env.npm_config_user_agent ?? ''; if (!ua.startsWith('pnpm/')) { console.error('Use pnpm'); process.exit(1); }\""
+    "preinstall": "node -e \"const ua = process.env.npm_config_user_agent ?? ''; if (!ua.startsWith('pnpm/')) { console.error('Use pnpm'); process.exit(1); }\"",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=24.18.0 <25",
     "pnpm": ">=11.17.0 <12"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,jsonc,css,scss,md,mdx,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "next": "16.2.11",
@@ -22,12 +33,16 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.2.0",
     "prettier": "3.9.6",
     "tailwindcss": "^4",
     "typescript": "^5"
