@@ -5,3 +5,7 @@ allowBuilds:
 engineStrict: true
 strictPeerDependencies: true
 autoInstallPeers: true
+
+overrides:
+  sharp: 0.35.3
+  postcss: 8.5.22
