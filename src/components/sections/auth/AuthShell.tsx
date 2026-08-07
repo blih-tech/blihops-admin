@@ -11,10 +11,10 @@ type AuthShellProps = {
 };
 
 const TRUST_ITEMS = [
-  'AI-powered operations',
   'Dedicated pods',
-  'Clear SLAs',
-  'Weekly reporting',
+  'Team performance',
+  'SLA tracking',
+  'Client reporting',
 ];
 
 export function AuthShell({ children }: AuthShellProps) {
@@ -45,14 +45,15 @@ export function AuthShell({ children }: AuthShellProps) {
               aria-hidden="true"
             />
             <p className="font-mono text-[10px] font-semibold tracking-[0.14em] text-white/70 uppercase">
-              Blih Ops workspace
+              Blih Ops management console
             </p>
             <h1 className="mt-2 font-heading text-2xl leading-[1.1] font-semibold tracking-[-0.025em] text-white xl:text-3xl">
-              Operations, running on structure, automation, and accountability.
+              Operations, managed with structure, automation, and
+              accountability.
             </h1>
             <p className="mt-2 max-w-[400px] text-[13px] leading-[1.5] text-white/70">
-              Access your managed pods, live reports, and SLA performance from
-              one place. Your work, measured and on track.
+              Manage client pods, teams, SLAs, and performance from one console.
+              Your delivery, measured and on track.
             </p>
           </div>
           <ul className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-2">
