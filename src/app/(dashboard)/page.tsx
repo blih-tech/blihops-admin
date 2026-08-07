@@ -1,9 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
-import { LoaderCircleIcon, LogOutIcon } from 'lucide-react';
+import { LogOutIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import { Dots } from '@/components/shared/Dots';
 import { Button } from '@/components/ui/button';
 import { authClient } from '@/lib/auth-client';
 
@@ -16,6 +17,8 @@ export default function OverviewPage() {
     try {
       await authClient.signOut();
       await fetch('/api/auth/session', { method: 'DELETE' });
+    } catch (err) {
+      console.error('Sign out failed:', err);
     } finally {
       setIsPending(false);
       router.replace('/auth/sign-in');
@@ -37,15 +40,13 @@ export default function OverviewPage() {
           disabled={isPending}
         >
           {isPending ? (
-            <LoaderCircleIcon
-              className="animate-spin"
-              data-icon="inline-start"
-              aria-hidden="true"
-            />
+            <Dots dots={3} />
           ) : (
-            <LogOutIcon data-icon="inline-start" aria-hidden="true" />
+            <>
+              <LogOutIcon data-icon="inline-start" aria-hidden="true" />
+              Sign out
+            </>
           )}
-          Sign out
         </Button>
       </div>
     </main>
