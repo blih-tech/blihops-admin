@@ -1,2 +1,0 @@
-export const authInputClassName =
-  'h-9 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] placeholder:text-muted-foreground/70 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20';

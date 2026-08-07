@@ -15,7 +15,13 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
-import { authInputClassName } from '@/components/sections/auth/auth-form-styles';
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
   createForgotPasswordSchema,
   type ForgotPasswordFormValues,
@@ -177,38 +183,31 @@ export function ForgotPasswordForm() {
 
       <form
         id="forgot-password-form"
-        className="mt-5 space-y-3.5"
+        className="mt-5 flex flex-col gap-3.5"
         onSubmit={handleSubmit(onSubmit)}
         noValidate
       >
-        <div className="space-y-1">
-          <label
-            className="text-xs font-medium text-foreground"
-            htmlFor="email"
-          >
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            placeholder="name@company.com"
-            aria-invalid={Boolean(errors.email)}
-            aria-describedby={errors.email ? 'email-error' : undefined}
-            className={authInputClassName}
-            {...register('email')}
-          />
-          {errors.email ? (
-            <p
-              id="email-error"
-              role="alert"
-              className="text-xs leading-[1.4] text-destructive"
+        <FieldGroup className="gap-3.5">
+          <Field data-invalid={Boolean(errors.email)}>
+            <FieldLabel
+              htmlFor="email"
+              className="text-xs font-medium text-foreground"
             >
-              {errors.email.message}
-            </p>
-          ) : null}
-        </div>
+              Email address
+            </FieldLabel>
+            <Input
+              id="email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="name@company.com"
+              aria-invalid={Boolean(errors.email)}
+              aria-describedby={errors.email ? 'email-error' : undefined}
+              {...register('email')}
+            />
+            <FieldError id="email-error" errors={[errors.email]} />
+          </Field>
+        </FieldGroup>
 
         <Button type="submit" size="lg" className="h-9 w-full">
           Send reset link
