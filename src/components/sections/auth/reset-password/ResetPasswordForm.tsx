@@ -10,6 +10,7 @@ import {
   EyeOffIcon,
   KeyRoundIcon,
   Link2OffIcon,
+  LoaderCircleIcon,
   ShieldCheckIcon,
 } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
@@ -29,6 +30,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '@/components/ui/input-group';
+import { authClient } from '@/lib/auth-client';
 import {
   createResetPasswordSchema,
   type ResetPasswordFormValues,
@@ -36,11 +38,17 @@ import {
 
 type ResetPasswordFormProps = {
   invalidToken: boolean;
+  token: string;
 };
 
-export function ResetPasswordForm({ invalidToken }: ResetPasswordFormProps) {
+export function ResetPasswordForm({
+  invalidToken,
+  token,
+}: ResetPasswordFormProps) {
   const reduceMotion = useReducedMotion();
+  const [invalid, setInvalid] = useState(invalidToken);
   const [resetted, setResetted] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const successRef = useRef<HTMLDivElement>(null);
@@ -54,6 +62,7 @@ export function ResetPasswordForm({ invalidToken }: ResetPasswordFormProps) {
       createResetPasswordSchema({
         newPasswordRequired: 'Create a new password.',
         passwordMin: 'Password must be at least 8 characters.',
+        passwordMax: 'Keep the password under 128 characters.',
         passwordRequirements:
           'Password must include uppercase, lowercase, a number, and a symbol.',
         confirmRequired: 'Confirm your new password.',
@@ -70,9 +79,21 @@ export function ResetPasswordForm({ invalidToken }: ResetPasswordFormProps) {
     }
   }, [resetted]);
 
-  function onSubmit(data: ResetPasswordFormValues) {
-    console.info('Password reset submitted:', data.newPassword);
-    setResetted(true);
+  async function onSubmit(data: ResetPasswordFormValues) {
+    setIsPending(true);
+    try {
+      const result = await authClient.resetPassword({
+        newPassword: data.newPassword,
+        token,
+      });
+      if (result.error !== null) {
+        setInvalid(true);
+        return;
+      }
+      setResetted(true);
+    } finally {
+      setIsPending(false);
+    }
   }
 
   const backToSignIn = (
@@ -85,7 +106,7 @@ export function ResetPasswordForm({ invalidToken }: ResetPasswordFormProps) {
     </Link>
   );
 
-  if (invalidToken) {
+  if (invalid) {
     return (
       <motion.div
         key="invalid-token"
@@ -317,13 +338,49 @@ export function ResetPasswordForm({ invalidToken }: ResetPasswordFormProps) {
         </Field>
       </FieldGroup>
 
-      <p className="text-xs leading-[1.4] text-muted-foreground">
-        Min. 8 characters
-      </p>
+      <div className="rounded-md border border-border bg-muted p-3">
+        <p className="font-mono text-[9px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+          Password requirements
+        </p>
+        <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
+          {[
+            '8+ characters',
+            'Upper & lowercase',
+            'One number',
+            'One symbol',
+          ].map((requirement) => (
+            <li
+              key={requirement}
+              className="flex items-center gap-1.5 text-[11px] text-foreground/70"
+            >
+              <CheckIcon
+                className="size-3 shrink-0 text-primary"
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+              {requirement}
+            </li>
+          ))}
+        </ul>
+      </div>
 
-      <Button type="submit" size="lg" className="h-9 w-full">
+      <Button
+        type="submit"
+        size="lg"
+        className="h-9 w-full"
+        disabled={isPending}
+      >
+        {isPending ? (
+          <LoaderCircleIcon
+            className="animate-spin"
+            data-icon="inline-start"
+            aria-hidden="true"
+          />
+        ) : null}
         Reset password
-        <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+        {!isPending ? (
+          <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+        ) : null}
       </Button>
 
       <div className="flex justify-center pt-0.5">{backToSignIn}</div>

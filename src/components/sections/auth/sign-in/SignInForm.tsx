@@ -1,10 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { ArrowRightIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
+import {
+  ArrowRightIcon,
+  EyeIcon,
+  EyeOffIcon,
+  LoaderCircleIcon,
+} from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -22,11 +28,30 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '@/components/ui/input-group';
+import { authClient } from '@/lib/auth-client';
+import { apiFetch } from '@/lib/api';
 import { createSignInSchema, type SignInFormValues } from '@/lib/forms/sign-in';
+
+function signInErrorMessage(status: number | undefined): string {
+  switch (status) {
+    case 401:
+      return 'Invalid email or password.';
+    case 403:
+      return 'Your email is not verified yet.';
+    case 429:
+      return 'Too many attempts. Please try again in a moment.';
+    default:
+      return 'Unable to sign in. Please try again.';
+  }
+}
 
 export function SignInForm() {
   const reduceMotion = useReducedMotion();
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { data: session } = authClient.useSession();
   const {
     register,
     handleSubmit,
@@ -53,8 +78,49 @@ export function SignInForm() {
 
   const remember = useWatch({ control, name: 'remember' });
 
-  function onSubmit(data: SignInFormValues) {
-    console.info('Sign in submitted:', data);
+  useEffect(() => {
+    const role = (session?.user as { role?: string } | undefined)?.role;
+    if (session !== null && session !== undefined && role === 'admin') {
+      router.replace('/');
+    }
+  }, [session, router]);
+
+  async function onSubmit(data: SignInFormValues) {
+    setSubmitError(null);
+    setIsPending(true);
+    try {
+      const result = await authClient.signIn.email({
+        email: data.workEmail,
+        password: data.password,
+        rememberMe: data.remember,
+      });
+
+      if (result.error !== null) {
+        setSubmitError(signInErrorMessage(result.error.status));
+        return;
+      }
+
+      await authClient.getSession();
+
+      const { data: tokenData } = await apiFetch<{
+        data: { token: string };
+      }>('/api/v1/auth/session-token', { method: 'POST' });
+
+      const mirror = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: tokenData.token }),
+      });
+      if (!mirror.ok) {
+        throw new Error('Failed to mirror session');
+      }
+
+      router.push('/');
+    } catch {
+      setSubmitError('Unable to sign in. Please try again.');
+    } finally {
+      setIsPending(false);
+    }
   }
 
   return (
@@ -169,9 +235,32 @@ export function SignInForm() {
           </Link>
         </div>
 
-        <Button type="submit" size="lg" className="h-9 w-full">
+        {submitError !== null ? (
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs leading-[1.5] text-destructive"
+          >
+            {submitError}
+          </p>
+        ) : null}
+
+        <Button
+          type="submit"
+          size="lg"
+          className="h-9 w-full"
+          disabled={isPending}
+        >
+          {isPending ? (
+            <LoaderCircleIcon
+              className="animate-spin"
+              data-icon="inline-start"
+              aria-hidden="true"
+            />
+          ) : null}
           Sign in
-          <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+          {!isPending ? (
+            <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+          ) : null}
         </Button>
       </form>
     </motion.div>

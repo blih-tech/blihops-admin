@@ -6,6 +6,7 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   InboxIcon,
+  LoaderCircleIcon,
   MailCheckIcon,
   MailIcon,
   RotateCwIcon,
@@ -22,6 +23,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { authClient } from '@/lib/auth-client';
 import {
   createForgotPasswordSchema,
   type ForgotPasswordFormValues,
@@ -30,6 +32,7 @@ import {
 export function ForgotPasswordForm() {
   const reduceMotion = useReducedMotion();
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
   const successRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -54,9 +57,17 @@ export function ForgotPasswordForm() {
     }
   }, [sentTo]);
 
-  function onSubmit(data: ForgotPasswordFormValues) {
-    console.info('Password reset requested for:', data.email);
-    setSentTo(data.email);
+  async function onSubmit(data: ForgotPasswordFormValues) {
+    setIsPending(true);
+    try {
+      await authClient.requestPasswordReset({
+        email: data.email,
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+    } finally {
+      setIsPending(false);
+      setSentTo(data.email);
+    }
   }
 
   function onResend() {
@@ -209,9 +220,23 @@ export function ForgotPasswordForm() {
           </Field>
         </FieldGroup>
 
-        <Button type="submit" size="lg" className="h-9 w-full">
+        <Button
+          type="submit"
+          size="lg"
+          className="h-9 w-full"
+          disabled={isPending}
+        >
+          {isPending ? (
+            <LoaderCircleIcon
+              className="animate-spin"
+              data-icon="inline-start"
+              aria-hidden="true"
+            />
+          ) : null}
           Send reset link
-          <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+          {!isPending ? (
+            <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+          ) : null}
         </Button>
 
         <div className="flex justify-center pt-0.5">{backToSignIn}</div>

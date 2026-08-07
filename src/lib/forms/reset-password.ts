@@ -3,6 +3,7 @@ import { z } from 'zod';
 type ResetPasswordValidationMessages = {
   newPasswordRequired: string;
   passwordMin: string;
+  passwordMax: string;
   passwordRequirements: string;
   confirmRequired: string;
   confirmMismatch: string;
@@ -17,6 +18,7 @@ export function createResetPasswordSchema(
         .string()
         .min(1, messages.newPasswordRequired)
         .min(8, messages.passwordMin)
+        .max(128, messages.passwordMax)
         .refine(
           (value) =>
             /[a-z]/.test(value) &&
