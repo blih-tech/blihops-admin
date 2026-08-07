@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
@@ -10,7 +10,6 @@ import {
   EyeOffIcon,
   KeyRoundIcon,
   Link2OffIcon,
-  LoaderCircleIcon,
   ShieldCheckIcon,
 } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
@@ -18,6 +17,12 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dots } from '@/components/shared/Dots';
+import {
+  fadeUpItem,
+  staggerContainer,
+} from '@/components/shared/motion-variants';
 import {
   Field,
   FieldError,
@@ -49,6 +54,7 @@ export function ResetPasswordForm({
   const [invalid, setInvalid] = useState(invalidToken);
   const [resetted, setResetted] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const successRef = useRef<HTMLDivElement>(null);
@@ -80,6 +86,7 @@ export function ResetPasswordForm({
   }, [resetted]);
 
   async function onSubmit(data: ResetPasswordFormValues) {
+    setSubmitError(null);
     setIsPending(true);
     try {
       const result = await authClient.resetPassword({
@@ -87,10 +94,20 @@ export function ResetPasswordForm({
         token,
       });
       if (result.error !== null) {
-        setInvalid(true);
+        if (result.error.status === 400 || result.error.status === 403) {
+          setInvalid(true);
+          return;
+        }
+        setSubmitError(
+          'Unable to reset your password. Please try again in a moment.',
+        );
         return;
       }
       setResetted(true);
+    } catch {
+      setSubmitError(
+        'Unable to reset your password. Please try again in a moment.',
+      );
     } finally {
       setIsPending(false);
     }
@@ -241,149 +258,168 @@ export function ResetPasswordForm({
       className="flex flex-col gap-4"
       onSubmit={handleSubmit(onSubmit)}
       noValidate
-      initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: reduceMotion ? 0 : 0.55,
-        ease: [0.22, 1, 0.36, 1],
-      }}
+      variants={staggerContainer}
+      initial={reduceMotion ? 'show' : 'hidden'}
+      animate="show"
     >
-      <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-[11px] font-semibold tracking-[0.02em] text-primary">
-        <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
-        Reset link verified
-      </span>
+      <motion.div variants={fadeUpItem}>
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-[11px] font-semibold tracking-[0.02em] text-primary">
+          <span
+            className="size-1.5 rounded-full bg-primary"
+            aria-hidden="true"
+          />
+          Reset link verified
+        </span>
+      </motion.div>
 
-      <div className="flex flex-col gap-1">
+      <motion.div variants={fadeUpItem}>
         <h2 className="font-heading text-xl leading-snug font-semibold tracking-[-0.02em] text-foreground sm:text-2xl">
           Create a new password
         </h2>
-      </div>
+      </motion.div>
 
-      <FieldGroup className="gap-3">
-        <Field data-invalid={Boolean(errors.newPassword)}>
-          <FieldLabel
-            htmlFor="newPassword"
-            className="text-xs font-medium text-foreground"
-          >
-            New password
-          </FieldLabel>
-          <InputGroup>
-            <InputGroupInput
-              id="newPassword"
-              type={showNewPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              placeholder="Create a secure password"
-              aria-invalid={Boolean(errors.newPassword)}
-              aria-describedby={
-                errors.newPassword ? 'newPassword-error' : undefined
-              }
-              {...register('newPassword')}
-            />
-            <InputGroupAddon align="inline-end">
-              <InputGroupButton
-                size="icon-sm"
-                aria-label={showNewPassword ? 'Hide password' : 'Show password'}
-                onClick={() => setShowNewPassword((v) => !v)}
-              >
-                {showNewPassword ? (
-                  <EyeOffIcon aria-hidden="true" />
-                ) : (
-                  <EyeIcon aria-hidden="true" />
-                )}
-              </InputGroupButton>
-            </InputGroupAddon>
-          </InputGroup>
-          <FieldError id="newPassword-error" errors={[errors.newPassword]} />
-        </Field>
-
-        <Field data-invalid={Boolean(errors.confirmPassword)}>
-          <FieldLabel
-            htmlFor="confirmPassword"
-            className="text-xs font-medium text-foreground"
-          >
-            Confirm password
-          </FieldLabel>
-          <InputGroup>
-            <InputGroupInput
-              id="confirmPassword"
-              type={showConfirmPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              placeholder="Repeat your new password"
-              aria-invalid={Boolean(errors.confirmPassword)}
-              aria-describedby={
-                errors.confirmPassword ? 'confirmPassword-error' : undefined
-              }
-              {...register('confirmPassword')}
-            />
-            <InputGroupAddon align="inline-end">
-              <InputGroupButton
-                size="icon-sm"
-                aria-label={
-                  showConfirmPassword ? 'Hide password' : 'Show password'
-                }
-                onClick={() => setShowConfirmPassword((v) => !v)}
-              >
-                {showConfirmPassword ? (
-                  <EyeOffIcon aria-hidden="true" />
-                ) : (
-                  <EyeIcon aria-hidden="true" />
-                )}
-              </InputGroupButton>
-            </InputGroupAddon>
-          </InputGroup>
-          <FieldError
-            id="confirmPassword-error"
-            errors={[errors.confirmPassword]}
-          />
-        </Field>
-      </FieldGroup>
-
-      <div className="rounded-md border border-border bg-muted p-3">
-        <p className="font-mono text-[9px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-          Password requirements
-        </p>
-        <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
-          {[
-            '8+ characters',
-            'Upper & lowercase',
-            'One number',
-            'One symbol',
-          ].map((requirement) => (
-            <li
-              key={requirement}
-              className="flex items-center gap-1.5 text-[11px] text-foreground/70"
+      <motion.div variants={fadeUpItem}>
+        <FieldGroup className="gap-3">
+          <Field data-invalid={Boolean(errors.newPassword)}>
+            <FieldLabel
+              htmlFor="newPassword"
+              className="text-xs font-medium text-foreground"
             >
-              <CheckIcon
-                className="size-3 shrink-0 text-primary"
-                strokeWidth={2}
-                aria-hidden="true"
+              New password
+            </FieldLabel>
+            <InputGroup>
+              <InputGroupInput
+                id="newPassword"
+                type={showNewPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                placeholder="Create a secure password"
+                aria-invalid={Boolean(errors.newPassword)}
+                aria-describedby={
+                  errors.newPassword ? 'newPassword-error' : undefined
+                }
+                {...register('newPassword')}
               />
-              {requirement}
-            </li>
-          ))}
-        </ul>
-      </div>
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  size="icon-sm"
+                  aria-label={
+                    showNewPassword ? 'Hide password' : 'Show password'
+                  }
+                  onClick={() => setShowNewPassword((v) => !v)}
+                >
+                  {showNewPassword ? (
+                    <EyeOffIcon aria-hidden="true" />
+                  ) : (
+                    <EyeIcon aria-hidden="true" />
+                  )}
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
+            <FieldError id="newPassword-error" errors={[errors.newPassword]} />
+          </Field>
 
-      <Button
-        type="submit"
-        size="lg"
-        className="h-9 w-full"
-        disabled={isPending}
-      >
-        {isPending ? (
-          <LoaderCircleIcon
-            className="animate-spin"
-            data-icon="inline-start"
-            aria-hidden="true"
-          />
-        ) : null}
-        Reset password
-        {!isPending ? (
-          <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
-        ) : null}
-      </Button>
+          <Field data-invalid={Boolean(errors.confirmPassword)}>
+            <FieldLabel
+              htmlFor="confirmPassword"
+              className="text-xs font-medium text-foreground"
+            >
+              Confirm password
+            </FieldLabel>
+            <InputGroup>
+              <InputGroupInput
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                placeholder="Repeat your new password"
+                aria-invalid={Boolean(errors.confirmPassword)}
+                aria-describedby={
+                  errors.confirmPassword ? 'confirmPassword-error' : undefined
+                }
+                {...register('confirmPassword')}
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  size="icon-sm"
+                  aria-label={
+                    showConfirmPassword ? 'Hide password' : 'Show password'
+                  }
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOffIcon aria-hidden="true" />
+                  ) : (
+                    <EyeIcon aria-hidden="true" />
+                  )}
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
+            <FieldError
+              id="confirmPassword-error"
+              errors={[errors.confirmPassword]}
+            />
+          </Field>
+        </FieldGroup>
+      </motion.div>
 
-      <div className="flex justify-center pt-0.5">{backToSignIn}</div>
+      <motion.div variants={fadeUpItem}>
+        <div className="rounded-md border border-border bg-muted p-3">
+          <p className="font-mono text-[9px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+            Password requirements
+          </p>
+          <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
+            {[
+              '8+ characters',
+              'Upper & lowercase',
+              'One number',
+              'One symbol',
+            ].map((requirement) => (
+              <li
+                key={requirement}
+                className="flex items-center gap-1.5 text-[11px] text-foreground/70"
+              >
+                <CheckIcon
+                  className="size-3 shrink-0 text-primary"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+                {requirement}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </motion.div>
+
+      <motion.div variants={fadeUpItem}>
+        {submitError !== null ? (
+          <Alert variant="destructive" className="rounded-md px-3 py-2">
+            <AlertDescription className="text-xs leading-[1.5]">
+              {submitError}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+      </motion.div>
+
+      <motion.div variants={fadeUpItem}>
+        <Button
+          type="submit"
+          size="lg"
+          className="h-9 w-full"
+          disabled={isPending}
+        >
+          {isPending ? (
+            <Dots />
+          ) : (
+            <>
+              Reset password
+              <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+            </>
+          )}
+        </Button>
+      </motion.div>
+
+      <motion.div variants={fadeUpItem}>
+        <div className="flex justify-center pt-0.5">{backToSignIn}</div>
+      </motion.div>
     </motion.form>
   );
 }

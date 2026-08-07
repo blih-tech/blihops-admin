@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
@@ -6,7 +6,6 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   InboxIcon,
-  LoaderCircleIcon,
   MailCheckIcon,
   MailIcon,
   RotateCwIcon,
@@ -16,6 +15,12 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dots } from '@/components/shared/Dots';
+import {
+  fadeUpItem,
+  staggerContainer,
+} from '@/components/shared/motion-variants';
 import {
   Field,
   FieldError,
@@ -33,6 +38,7 @@ export function ForgotPasswordForm() {
   const reduceMotion = useReducedMotion();
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const successRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -58,15 +64,26 @@ export function ForgotPasswordForm() {
   }, [sentTo]);
 
   async function onSubmit(data: ForgotPasswordFormValues) {
+    setSubmitError(null);
     setIsPending(true);
     try {
-      await authClient.requestPasswordReset({
+      const result = await authClient.requestPasswordReset({
         email: data.email,
         redirectTo: `${window.location.origin}/auth/reset-password`,
       });
+      if (result.error !== null) {
+        setSubmitError(
+          'Unable to send the reset link. Please try again in a moment.',
+        );
+        return;
+      }
+      setSentTo(data.email);
+    } catch {
+      setSubmitError(
+        'Unable to send the reset link. Please try again in a moment.',
+      );
     } finally {
       setIsPending(false);
-      setSentTo(data.email);
     }
   }
 
@@ -172,75 +189,84 @@ export function ForgotPasswordForm() {
 
   return (
     <motion.div
-      initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: reduceMotion ? 0 : 0.55,
-        ease: [0.22, 1, 0.36, 1],
-      }}
+      variants={staggerContainer}
+      initial={reduceMotion ? 'show' : 'hidden'}
+      animate="show"
+      className="flex flex-col gap-1"
     >
-      <div className="flex flex-col gap-1">
+      <motion.div variants={fadeUpItem}>
         <p className="font-mono text-[10px] font-semibold tracking-[0.11em] text-primary uppercase">
           Password recovery
         </p>
+      </motion.div>
+      <motion.div variants={fadeUpItem}>
         <h2 className="font-heading text-xl leading-snug font-semibold tracking-[-0.02em] text-foreground sm:text-2xl">
           Reset your password
         </h2>
+      </motion.div>
+      <motion.div variants={fadeUpItem}>
         <p className="text-[13px] leading-[1.5] text-muted-foreground">
           Enter the email associated with your Blih Ops account. We&apos;ll send
           password reset instructions if it matches an account.
         </p>
-      </div>
+      </motion.div>
 
-      <form
-        id="forgot-password-form"
-        className="mt-5 flex flex-col gap-3.5"
-        onSubmit={handleSubmit(onSubmit)}
-        noValidate
-      >
-        <FieldGroup className="gap-3.5">
-          <Field data-invalid={Boolean(errors.email)}>
-            <FieldLabel
-              htmlFor="email"
-              className="text-xs font-medium text-foreground"
-            >
-              Email address
-            </FieldLabel>
-            <Input
-              id="email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              placeholder="name@company.com"
-              aria-invalid={Boolean(errors.email)}
-              aria-describedby={errors.email ? 'email-error' : undefined}
-              {...register('email')}
-            />
-            <FieldError id="email-error" errors={[errors.email]} />
-          </Field>
-        </FieldGroup>
-
-        <Button
-          type="submit"
-          size="lg"
-          className="h-9 w-full"
-          disabled={isPending}
+      <motion.div variants={fadeUpItem}>
+        <form
+          id="forgot-password-form"
+          className="mt-5 flex flex-col gap-3.5"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
         >
-          {isPending ? (
-            <LoaderCircleIcon
-              className="animate-spin"
-              data-icon="inline-start"
-              aria-hidden="true"
-            />
-          ) : null}
-          Send reset link
-          {!isPending ? (
-            <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
-          ) : null}
-        </Button>
+          <FieldGroup className="gap-3.5">
+            <Field data-invalid={Boolean(errors.email)}>
+              <FieldLabel
+                htmlFor="email"
+                className="text-xs font-medium text-foreground"
+              >
+                Email address
+              </FieldLabel>
+              <Input
+                id="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="name@company.com"
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? 'email-error' : undefined}
+                {...register('email')}
+              />
+              <FieldError id="email-error" errors={[errors.email]} />
+            </Field>
+          </FieldGroup>
 
-        <div className="flex justify-center pt-0.5">{backToSignIn}</div>
-      </form>
+          {submitError !== null ? (
+            <Alert variant="destructive" className="rounded-md px-3 py-2">
+              <AlertDescription className="text-xs leading-[1.5]">
+                {submitError}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          <Button
+            type="submit"
+            size="lg"
+            className="h-9 w-full"
+            disabled={isPending}
+          >
+            {isPending ? (
+              <Dots />
+            ) : (
+              <>
+                Send reset link
+                <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+              </>
+            )}
+          </Button>
+
+          <div className="flex justify-center pt-0.5">{backToSignIn}</div>
+        </form>
+      </motion.div>
     </motion.div>
   );
 }
