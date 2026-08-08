@@ -80,11 +80,12 @@ export function SignInForm() {
   const remember = useWatch({ control, name: 'remember' });
 
   useEffect(() => {
+    if (isPending) return;
     const role = (session?.user as { role?: string } | undefined)?.role;
     if (session !== null && session !== undefined && role === 'admin') {
       router.replace('/');
     }
-  }, [session, router]);
+  }, [isPending, session, router]);
 
   async function onSubmit(data: SignInFormValues) {
     setSubmitError(null);
