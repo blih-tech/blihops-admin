@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronRightIcon } from 'lucide-react';
 
@@ -41,7 +42,7 @@ export function NavMain({
                 <SidebarMenuButton
                   tooltip={item.title}
                   isActive={isActive}
-                  render={<a href={item.url ?? '#'} />}
+                  render={<Link href={item.url ?? '#'} />}
                 >
                   {item.icon ? <item.icon /> : null}
                   <span>{item.title}</span>
@@ -76,7 +77,7 @@ export function NavMain({
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton
                         isActive={subItem.url === pathname}
-                        render={<a href={subItem.url} />}
+                        render={<Link href={subItem.url} />}
                       >
                         <span>{subItem.title}</span>
                       </SidebarMenuSubButton>

@@ -26,6 +26,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             priority
             className="h-8 w-auto object-contain group-data-[collapsible=icon]:hidden"
           />
+          <span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-primary-foreground uppercase group-data-[collapsible=icon]:hidden">
+            Admin
+          </span>
           <Image
             src="/icon.png"
             alt="BlihOps"
