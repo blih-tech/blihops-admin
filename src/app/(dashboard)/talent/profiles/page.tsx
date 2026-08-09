@@ -1,10 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { UnderConstruction } from '@/components/shared/UnderConstruction';
 
 export default function TalentProfilesPage() {
-  return (
-    <PlaceholderPage
-      title="Talent Profiles"
-      description="Manage vetted talent profiles."
-    />
-  );
+  return <UnderConstruction title="Talent Profiles" />;
 }
