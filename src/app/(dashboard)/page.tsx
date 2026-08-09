@@ -1,8 +1,8 @@
-﻿import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+﻿import { UnderConstruction } from '@/components/shared/UnderConstruction';
 
 export default function OverviewPage() {
   return (
-    <PlaceholderPage
+    <UnderConstruction
       title="Dashboard"
       description="Leads, companies, talent, and content operations."
     />

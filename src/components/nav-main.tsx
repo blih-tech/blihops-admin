@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronRightIcon } from 'lucide-react';
@@ -21,6 +22,10 @@ import {
 } from '@/components/ui/sidebar';
 import type { SidebarNavItem } from '@/lib/nav';
 
+function hasActiveChild(item: SidebarNavItem, pathname: string): boolean {
+  return item.items?.some((sub) => sub.url === pathname) ?? false;
+}
+
 export function NavMain({
   label,
   items,
@@ -29,6 +34,37 @@ export function NavMain({
   items: SidebarNavItem[];
 }) {
   const pathname = usePathname();
+  const [openKeys, setOpenKeys] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(
+      items
+        .filter(
+          (item) =>
+            item.items?.length &&
+            (hasActiveChild(item, pathname) || item.isActive),
+        )
+        .map((item) => [item.title, true]),
+    ),
+  );
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setOpenKeys((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const item of items) {
+        if (
+          item.items?.length &&
+          hasActiveChild(item, pathname) &&
+          !next[item.title]
+        ) {
+          next[item.title] = true;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }
 
   return (
     <SidebarGroup>
@@ -51,11 +87,14 @@ export function NavMain({
             );
           }
 
-          const hasActiveChild = item.items.some((sub) => sub.url === pathname);
+          const activeChild = hasActiveChild(item, pathname);
           return (
             <Collapsible
               key={item.title}
-              defaultOpen={hasActiveChild || item.isActive}
+              open={openKeys[item.title] ?? false}
+              onOpenChange={(open) =>
+                setOpenKeys((prev) => ({ ...prev, [item.title]: open }))
+              }
               className="group/collapsible"
               render={<SidebarMenuItem />}
             >
@@ -63,7 +102,7 @@ export function NavMain({
                 render={
                   <SidebarMenuButton
                     tooltip={item.title}
-                    isActive={hasActiveChild}
+                    isActive={activeChild}
                   />
                 }
               >

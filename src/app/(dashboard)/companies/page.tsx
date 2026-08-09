@@ -1,10 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { UnderConstruction } from '@/components/shared/UnderConstruction';
 
 export default function CompaniesPage() {
-  return (
-    <PlaceholderPage
-      title="Companies"
-      description="Manage companies and client access."
-    />
-  );
+  return <UnderConstruction title="Companies" />;
 }

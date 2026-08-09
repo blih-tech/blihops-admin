@@ -1,10 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { UnderConstruction } from '@/components/shared/UnderConstruction';
 
 export default function CalComPage() {
-  return (
-    <PlaceholderPage
-      title="Cal.com"
-      description="View the Cal.com connection status."
-    />
-  );
+  return <UnderConstruction title="Cal.com" />;
 }

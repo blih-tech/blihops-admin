@@ -1,10 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { UnderConstruction } from '@/components/shared/UnderConstruction';
 
 export default function EmailTemplatesPage() {
-  return (
-    <PlaceholderPage
-      title="Email Templates"
-      description="Manage transactional email templates."
-    />
-  );
+  return <UnderConstruction title="Email Templates" />;
 }

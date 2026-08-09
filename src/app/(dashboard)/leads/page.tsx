@@ -1,10 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { UnderConstruction } from '@/components/shared/UnderConstruction';
 
 export default function LeadsPage() {
-  return (
-    <PlaceholderPage
-      title="Leads"
-      description="Track and qualify incoming leads."
-    />
-  );
+  return <UnderConstruction title="Leads" />;
 }
