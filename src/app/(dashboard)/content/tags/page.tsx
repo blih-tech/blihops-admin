@@ -1,5 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { TagsList } from '@/components/sections/content/tags/tags-list';
 
 export default function TagsPage() {
-  return <PlaceholderPage title="Tags" description="Manage content tags." />;
+  return <TagsList />;
 }
