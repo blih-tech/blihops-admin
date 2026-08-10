@@ -1,10 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { LogosGrid } from '@/components/sections/content/logos/logos-grid';
 
 export default function LogosPage() {
-  return (
-    <PlaceholderPage
-      title="Logos"
-      description="Manage trusted logos shown on the home page."
-    />
-  );
+  return <LogosGrid />;
 }

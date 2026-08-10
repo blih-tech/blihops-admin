@@ -3,6 +3,7 @@ import { Inter, Source_Serif_4, JetBrains_Mono } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 
 import { Toaster } from '@/components/ui/sonner';
+import { Providers } from '@/app/providers';
 import './globals.css';
 
 const fontSans = Inter({
@@ -38,6 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
@@ -47,8 +49,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <Toaster position="bottom-right" />
+          <Providers>
+            {children}
+            <Toaster position="bottom-right" />
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

@@ -17,6 +17,7 @@ type ApiFetchOptions = {
   timeoutMs?: number;
   retries?: number;
   credentials?: RequestCredentials;
+  responseType?: 'json' | 'none';
 };
 
 const DEFAULT_TIMEOUT_MS = 15_000;
@@ -37,6 +38,7 @@ export async function apiFetch<T>(
     timeoutMs = DEFAULT_TIMEOUT_MS,
     retries = DEFAULT_RETRIES,
     credentials = 'include',
+    responseType = 'json',
   } = options;
 
   const baseURL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -77,6 +79,9 @@ export async function apiFetch<T>(
     }
 
     if (response.ok) {
+      if (responseType === 'none') {
+        return undefined as T;
+      }
       return (await response.json()) as T;
     }
 

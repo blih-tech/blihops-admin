@@ -1,0 +1,172 @@
+'use client';
+
+import { useRef, useState } from 'react';
+import { ImagePlusIcon, Loader2Icon, XIcon } from 'lucide-react';
+
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+
+const ACCEPTED_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/svg+xml',
+];
+const MAX_SIZE_MB = 5;
+
+type LogoUploadProps = {
+  value: string | null;
+  onChange: (url: string | null) => void;
+  onUploadingChange?: (isUploading: boolean) => void;
+  error?: string;
+  disabled?: boolean;
+};
+
+export function LogoUpload({
+  value,
+  onChange,
+  onUploadingChange,
+  error,
+  disabled,
+}: LogoUploadProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  async function handleFile(file: File | undefined | null) {
+    setFileError(null);
+    if (!file) {
+      return;
+    }
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setFileError('Only JPEG, PNG, WEBP, or SVG images are allowed.');
+      return;
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      setFileError(`Image must be ${MAX_SIZE_MB} MB or smaller.`);
+      return;
+    }
+
+    setIsUploading(true);
+    onUploadingChange?.(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/uploads', {
+        method: 'POST',
+        body: formData,
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        url?: string;
+        error?: { message?: string };
+      } | null;
+      if (!response.ok) {
+        throw new Error(payload?.error?.message ?? 'Upload failed');
+      }
+      if (!payload?.url) {
+        throw new Error('Upload failed: no URL returned');
+      }
+      onChange(payload.url);
+    } catch (err) {
+      setFileError(
+        err instanceof Error ? err.message : 'Upload failed. Try again.',
+      );
+    } finally {
+      setIsUploading(false);
+      onUploadingChange?.(false);
+    }
+  }
+
+  const blocked = disabled || isUploading;
+
+  return (
+    <div className="space-y-2">
+      <div
+        role="button"
+        tabIndex={blocked ? -1 : 0}
+        aria-label="Upload logo image"
+        onClick={() => {
+          if (!blocked) {
+            inputRef.current?.click();
+          }
+        }}
+        onKeyDown={(event) => {
+          if (!blocked && (event.key === 'Enter' || event.key === ' ')) {
+            inputRef.current?.click();
+          }
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          if (!blocked) {
+            setIsDragging(true);
+          }
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(event) => {
+          event.preventDefault();
+          setIsDragging(false);
+          if (!blocked) {
+            void handleFile(event.dataTransfer.files?.[0]);
+          }
+        }}
+        className={cn(
+          'flex aspect-[3/1] cursor-pointer flex-col items-center justify-center gap-1.5 overflow-hidden rounded-md border border-dashed bg-muted/40 text-muted-foreground transition-colors outline-none hover:border-ring hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30',
+          isDragging && 'border-ring bg-muted/60',
+          (error ?? fileError) && 'border-destructive/60',
+          blocked && 'pointer-events-none opacity-50',
+        )}
+      >
+        {isUploading ? (
+          <>
+            <Loader2Icon className="size-6 animate-spin" />
+            <span className="text-xs font-medium">Uploading…</span>
+          </>
+        ) : value ? (
+          // eslint-disable-next-line @next/next/no-img-element -- blob-storage logo URLs; next/image adds no value at this size
+          <img
+            src={value}
+            alt="Logo preview"
+            className="h-full w-full object-contain p-4"
+          />
+        ) : (
+          <>
+            <ImagePlusIcon className="size-6" />
+            <span className="text-xs font-medium">
+              Click to upload or drag &amp; drop
+            </span>
+            <span className="text-[10px] tracking-wider uppercase">
+              PNG · JPEG · WEBP · SVG — max 5 MB
+            </span>
+          </>
+        )}
+      </div>
+      {value && !isUploading && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Preview ready</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            onClick={() => onChange(null)}
+          >
+            <XIcon data-icon="inline-start" />
+            Remove
+          </Button>
+        </div>
+      )}
+      {(error ?? fileError) && (
+        <p className="text-xs text-destructive">{error ?? fileError}</p>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPTED_TYPES.join(',')}
+        className="hidden"
+        onChange={(event) => {
+          void handleFile(event.target.files?.[0]);
+        }}
+      />
+    </div>
+  );
+}
