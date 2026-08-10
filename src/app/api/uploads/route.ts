@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 
-const ACCEPTED_TYPES = [
+const ACCEPTED_IMAGE_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
   'image/svg+xml',
 ];
-const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm'];
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
@@ -37,31 +39,36 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!ACCEPTED_TYPES.includes(file.type)) {
+  const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type);
+  const isVideo = ACCEPTED_VIDEO_TYPES.includes(file.type);
+
+  if (!isImage && !isVideo) {
     return NextResponse.json(
       {
         error: {
           code: 'UPLOAD_INVALID_TYPE',
-          message: 'Only JPEG, PNG, WEBP, or SVG images are allowed',
+          message:
+            'Only JPEG, PNG, WEBP, SVG images or MP4, WEBM videos are allowed',
         },
       },
       { status: 400 },
     );
   }
 
-  if (file.size > MAX_SIZE_BYTES) {
+  const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+  if (file.size > maxBytes) {
     return NextResponse.json(
       {
         error: {
           code: 'UPLOAD_TOO_LARGE',
-          message: 'Image must be 5 MB or smaller',
+          message: `File must be ${isVideo ? 50 : 5} MB or smaller`,
         },
       },
       { status: 400 },
     );
   }
 
-  const blob = await put(`logos/${file.name}`, file, {
+  const blob = await put(`uploads/${file.name}`, file, {
     access: 'public',
     contentType: file.type,
     addRandomSuffix: true,
