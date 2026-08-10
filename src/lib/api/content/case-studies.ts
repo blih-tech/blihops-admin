@@ -151,3 +151,10 @@ export async function publishCaseStudy(id: string): Promise<CaseStudyResponse> {
     method: 'POST',
   });
 }
+
+export async function deleteCaseStudy(id: string): Promise<void> {
+  return apiFetch<void>(`${CASE_STUDIES_PATH}/${id}`, {
+    method: 'DELETE',
+    responseType: 'none',
+  });
+}

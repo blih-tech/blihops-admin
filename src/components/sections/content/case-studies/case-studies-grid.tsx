@@ -12,11 +12,15 @@ import { Dots } from '@/components/shared/Dots';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { CaseStudyCard } from '@/components/sections/content/case-studies/case-study-card';
+import { ConfirmDeleteCaseStudyDialog } from '@/components/sections/content/case-studies/confirm-delete-case-study-dialog';
 import {
+  deleteCaseStudy,
   listCaseStudies,
   publishCaseStudy,
   type CaseStudyListItem,
+  type CaseStudiesResponse,
 } from '@/lib/api/content/case-studies';
+import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
 import { toastError, toastInfo, toastSuccess } from '@/lib/toast';
 
 const PAGE_SIZE = 12;
@@ -35,14 +39,18 @@ export function CaseStudiesGrid() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<StatusFilter>(undefined);
   const [page, setPage] = useState(1);
+  const [deletingCaseStudy, setDeletingCaseStudy] =
+    useState<CaseStudyListItem | null>(null);
+
+  const listQueryKey = [
+    'content',
+    'case-studies',
+    'admin',
+    { page, pageSize: PAGE_SIZE, status },
+  ] as const;
 
   const { data, error, isPending, isFetching, refetch } = useQuery({
-    queryKey: [
-      'content',
-      'case-studies',
-      'admin',
-      { page, pageSize: PAGE_SIZE, status },
-    ],
+    queryKey: listQueryKey,
     queryFn: () => listCaseStudies({ page, pageSize: PAGE_SIZE, status }),
   });
 
@@ -62,6 +70,33 @@ export function CaseStudiesGrid() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteCaseStudy,
+    onMutate: async (id) => {
+      const previous = takeSnapshot<CaseStudiesResponse>(
+        queryClient,
+        listQueryKey,
+      );
+      queryClient.setQueryData<CaseStudiesResponse>(listQueryKey, (old) =>
+        old
+          ? { ...old, items: old.items.filter((item) => item.id !== id) }
+          : old,
+      );
+      setDeletingCaseStudy(null);
+      return { previous };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: LIST_KEY });
+      toastSuccess('Case study deleted');
+    },
+    onError: (err, _id, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, listQueryKey, context.previous);
+      }
+      toastError('Failed to delete case study', err.message);
+    },
+  });
+
   function handlePreview(caseStudy: CaseStudyListItem) {
     toastInfo(
       'Preview is not built yet',
@@ -78,10 +113,13 @@ export function CaseStudiesGrid() {
   }
 
   function handleDelete(caseStudy: CaseStudyListItem) {
-    toastInfo(
-      'Delete is not integrated yet',
-      `“${caseStudy.titles.en || caseStudy.titles.de || caseStudy.client}”`,
-    );
+    setDeletingCaseStudy(caseStudy);
+  }
+
+  function handleConfirmDelete() {
+    if (deletingCaseStudy) {
+      deleteMutation.mutate(deletingCaseStudy.id);
+    }
   }
 
   const items = data?.items ?? [];
@@ -183,6 +221,18 @@ export function CaseStudiesGrid() {
           )}
         </>
       )}
+
+      <ConfirmDeleteCaseStudyDialog
+        open={Boolean(deletingCaseStudy)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingCaseStudy(null);
+          }
+        }}
+        caseStudy={deletingCaseStudy}
+        isDeleting={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }
