@@ -222,7 +222,13 @@ function TestimonialFormContent({
           Cancel
         </Button>
         <Button type="submit" disabled={!canSubmit}>
-          {isSaving ? <Dots dots={3} /> : 'Add testimonial'}
+          {isSaving ? (
+            <Dots dots={3} />
+          ) : testimonial ? (
+            'Save changes'
+          ) : (
+            'Add testimonial'
+          )}
         </Button>
       </DialogFooter>
     </form>
