@@ -1,10 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { TestimonialsGrid } from '@/components/sections/content/testimonials/testimonials-grid';
 
 export default function TestimonialsPage() {
-  return (
-    <PlaceholderPage
-      title="Testimonials"
-      description="Manage home page testimonials."
-    />
-  );
+  return <TestimonialsGrid />;
 }
