@@ -205,4 +205,79 @@
   h3 {
     @apply font-heading;
   }
+
+  /* Light gray video controls matching the admin UI (WebKit/Chromium). */
+  video::-webkit-media-controls-panel {
+    background-color: oklch(0.12 0 0);
+    filter: invert(1) hue-rotate(180deg);
+  }
+}
+
+/* Rendered rich-text content, matching the public case-study narrative
+   styles (used wherever sanitized body HTML is displayed in admin). */
+.content-prose {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.625;
+  color: var(--muted-foreground);
+
+  a {
+    font-weight: 500;
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  blockquote {
+    margin: 1.75rem 0;
+    padding: 1.25rem;
+    background-color: var(--foreground);
+    color: var(--background);
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.625;
+
+    @media (min-width: 768px) {
+      padding: 1.5rem;
+      font-size: 0.9375rem;
+    }
+  }
+
+  h3 {
+    margin: 2rem 0 0.75rem;
+    font-family: var(--font-source-serif), ui-serif, Georgia, serif;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--foreground);
+  }
+
+  li {
+    padding-left: 0.25rem;
+  }
+
+  p {
+    margin-bottom: 1.25rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  strong {
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  ul {
+    margin: 1.25rem 0;
+    list-style: disc;
+    display: grid;
+    gap: 0.5rem;
+    padding-left: 1.25rem;
+
+    li::marker {
+      color: var(--primary);
+    }
+  }
 }

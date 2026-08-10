@@ -1,10 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { CaseStudiesGrid } from '@/components/sections/content/case-studies/case-studies-grid';
 
 export default function CaseStudiesPage() {
-  return (
-    <PlaceholderPage
-      title="Case Studies"
-      description="Manage case study content."
-    />
-  );
+  return <CaseStudiesGrid />;
 }
