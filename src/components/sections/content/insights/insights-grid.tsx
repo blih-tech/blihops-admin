@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { NewspaperIcon, PlusIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -12,10 +12,19 @@ import { Dots } from '@/components/shared/Dots';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { InsightCard } from '@/components/sections/content/insights/insight-card';
-import { listInsights, type InsightListItem } from '@/lib/api/content/insights';
-import { toastInfo } from '@/lib/toast';
+import { ConfirmDeleteInsightDialog } from '@/components/sections/content/insights/confirm-delete-insight-dialog';
+import {
+  deleteInsight,
+  listInsights,
+  publishInsight,
+  type InsightListItem,
+  type InsightsResponse,
+} from '@/lib/api/content/insights';
+import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
+import { toastError, toastInfo, toastSuccess } from '@/lib/toast';
 
 const PAGE_SIZE = 12;
+const LIST_KEY = ['content', 'insights'] as const;
 
 type StatusFilter = 'DRAFT' | 'PUBLISHED' | undefined;
 
@@ -27,16 +36,21 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 
 export function InsightsGrid() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<StatusFilter>(undefined);
   const [page, setPage] = useState(1);
+  const [deletingInsight, setDeletingInsight] =
+    useState<InsightListItem | null>(null);
+
+  const listQueryKey = [
+    'content',
+    'insights',
+    'admin',
+    { page, pageSize: PAGE_SIZE, status },
+  ] as const;
 
   const { data, error, isPending, isFetching, refetch } = useQuery({
-    queryKey: [
-      'content',
-      'insights',
-      'admin',
-      { page, pageSize: PAGE_SIZE, status },
-    ],
+    queryKey: listQueryKey,
     queryFn: () => listInsights({ page, pageSize: PAGE_SIZE, status }),
   });
 
@@ -44,6 +58,44 @@ export function InsightsGrid() {
     setStatus(next);
     setPage(1);
   }
+
+  const publishMutation = useMutation({
+    mutationFn: publishInsight,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: LIST_KEY });
+      toastSuccess('Insight published');
+    },
+    onError: (err) => {
+      toastError('Failed to publish', err.message);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteInsight,
+    onMutate: async (id) => {
+      const previous = takeSnapshot<InsightsResponse>(
+        queryClient,
+        listQueryKey,
+      );
+      queryClient.setQueryData<InsightsResponse>(listQueryKey, (old) =>
+        old
+          ? { ...old, items: old.items.filter((item) => item.id !== id) }
+          : old,
+      );
+      setDeletingInsight(null);
+      return { previous };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: LIST_KEY });
+      toastSuccess('Insight deleted');
+    },
+    onError: (err, _id, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, listQueryKey, context.previous);
+      }
+      toastError('Failed to delete insight', err.message);
+    },
+  });
 
   function handlePreview(insight: InsightListItem) {
     toastInfo(
@@ -53,24 +105,21 @@ export function InsightsGrid() {
   }
 
   function handleEdit(insight: InsightListItem) {
-    toastInfo(
-      'Edit is not built yet',
-      `“${insight.titles.en || insight.titles.de || insight.author}”`,
-    );
+    router.push(`/content/insights/${insight.id}`);
   }
 
   function handlePublish(insight: InsightListItem) {
-    toastInfo(
-      'Publish is not integrated yet',
-      `“${insight.titles.en || insight.titles.de || insight.author}”`,
-    );
+    publishMutation.mutate(insight.id);
   }
 
   function handleDelete(insight: InsightListItem) {
-    toastInfo(
-      'Delete is not integrated yet',
-      `“${insight.titles.en || insight.titles.de || insight.author}”`,
-    );
+    setDeletingInsight(insight);
+  }
+
+  function handleConfirmDelete() {
+    if (deletingInsight) {
+      deleteMutation.mutate(deletingInsight.id);
+    }
   }
 
   const items = data?.items ?? [];
@@ -147,6 +196,10 @@ export function InsightsGrid() {
               <InsightCard
                 key={insight.id}
                 insight={insight}
+                isPending={
+                  publishMutation.isPending &&
+                  publishMutation.variables === insight.id
+                }
                 onPreview={handlePreview}
                 onEdit={handleEdit}
                 onPublish={handlePublish}
@@ -168,6 +221,18 @@ export function InsightsGrid() {
           )}
         </>
       )}
+
+      <ConfirmDeleteInsightDialog
+        open={Boolean(deletingInsight)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingInsight(null);
+          }
+        }}
+        insight={deletingInsight}
+        isDeleting={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

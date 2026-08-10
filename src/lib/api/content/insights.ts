@@ -93,9 +93,26 @@ export type CreateInsightPayload = {
   };
 };
 
+export type UpdateInsightPayload =
+  | {
+      author?: string;
+      readTimeMinutes?: number;
+      categoryId?: string | null;
+      media?: InsightMedia;
+      tags?: string[];
+    }
+  | {
+      locale: 'en' | 'de';
+      content: Partial<InsightLocaleContent>;
+    };
+
 export type InsightResponse = {
   data: Insight;
 };
+
+export async function getInsight(id: string): Promise<InsightResponse> {
+  return apiFetch<InsightResponse>(`${INSIGHTS_PATH}/${id}`);
+}
 
 export async function listInsights(
   params: ListInsightsParams = {},
@@ -121,5 +138,28 @@ export async function createInsight(
   return apiFetch<InsightResponse>(INSIGHTS_PATH, {
     method: 'POST',
     body: payload,
+  });
+}
+
+export async function updateInsight(
+  id: string,
+  payload: UpdateInsightPayload,
+): Promise<InsightResponse> {
+  return apiFetch<InsightResponse>(`${INSIGHTS_PATH}/${id}`, {
+    method: 'PATCH',
+    body: payload,
+  });
+}
+
+export async function publishInsight(id: string): Promise<InsightResponse> {
+  return apiFetch<InsightResponse>(`${INSIGHTS_PATH}/${id}/publish`, {
+    method: 'POST',
+  });
+}
+
+export async function deleteInsight(id: string): Promise<void> {
+  return apiFetch<void>(`${INSIGHTS_PATH}/${id}`, {
+    method: 'DELETE',
+    responseType: 'none',
   });
 }
