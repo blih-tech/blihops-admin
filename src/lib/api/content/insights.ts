@@ -81,6 +81,22 @@ export type ListInsightsParams = {
   categoryId?: string;
 };
 
+export type CreateInsightPayload = {
+  author: string;
+  readTimeMinutes?: number;
+  categoryId?: string | null;
+  media?: InsightMedia;
+  tags?: string[];
+  content?: {
+    en?: Partial<InsightLocaleContent>;
+    de?: Partial<InsightLocaleContent>;
+  };
+};
+
+export type InsightResponse = {
+  data: Insight;
+};
+
 export async function listInsights(
   params: ListInsightsParams = {},
 ): Promise<InsightsResponse> {
@@ -97,4 +113,13 @@ export async function listInsights(
   return apiFetch<InsightsResponse>(
     `${INSIGHTS_PATH}${queryString ? `?${queryString}` : ''}`,
   );
+}
+
+export async function createInsight(
+  payload: CreateInsightPayload,
+): Promise<InsightResponse> {
+  return apiFetch<InsightResponse>(INSIGHTS_PATH, {
+    method: 'POST',
+    body: payload,
+  });
 }

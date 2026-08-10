@@ -1,10 +1,33 @@
-import { ClapperboardIcon, PlayIcon } from 'lucide-react';
+'use client';
+
+import {
+  ClapperboardIcon,
+  EllipsisVerticalIcon,
+  EyeIcon,
+  PencilIcon,
+  PlayIcon,
+  SendIcon,
+  Trash2Icon,
+} from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { InsightListItem } from '@/lib/api/content/insights';
 
 type InsightCardProps = {
   insight: InsightListItem;
+  isPending?: boolean;
+  onPreview: (insight: InsightListItem) => void;
+  onEdit: (insight: InsightListItem) => void;
+  onPublish: (insight: InsightListItem) => void;
+  onDelete: (insight: InsightListItem) => void;
 };
 
 function isLocaleComplete(
@@ -16,15 +39,75 @@ function isLocaleComplete(
   );
 }
 
-export function InsightCard({ insight }: InsightCardProps) {
+export function InsightCard({
+  insight,
+  isPending = false,
+  onPreview,
+  onEdit,
+  onPublish,
+  onDelete,
+}: InsightCardProps) {
   const title = insight.titles.en || insight.titles.de || 'Untitled insight';
   const excerpt = insight.excerpts.en || insight.excerpts.de;
+  const isPublished = insight.status === 'PUBLISHED';
   const enComplete = isLocaleComplete(insight, 'en');
   const deComplete = isLocaleComplete(insight, 'de');
   const hasMedia = Boolean(insight.media?.url);
 
   return (
-    <article className="group flex min-h-full min-w-0 flex-col border border-border bg-background p-4 transition-colors duration-300 hover:bg-muted/50 sm:p-5">
+    <article
+      aria-busy={isPending}
+      className={cn(
+        'group relative flex min-h-full min-w-0 flex-col border border-border bg-background p-4 transition-[opacity,background-color] duration-300 hover:bg-muted/50 sm:p-5',
+        isPending && 'opacity-60',
+      )}
+    >
+      <div className="absolute top-3 right-3 z-10 opacity-0 transition-opacity group-focus-within:opacity-100 md:group-hover:opacity-100">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="bg-foreground text-background hover:bg-foreground/90 hover:text-background"
+              />
+            }
+          >
+            <EllipsisVerticalIcon />
+            <span className="sr-only">Insight actions</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="bottom"
+            align="end"
+            sideOffset={4}
+            className="w-44"
+          >
+            <DropdownMenuItem onClick={() => onPreview(insight)}>
+              <EyeIcon />
+              Preview
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(insight)}>
+              <PencilIcon />
+              Edit
+            </DropdownMenuItem>
+            {!isPublished && (
+              <DropdownMenuItem onClick={() => onPublish(insight)}>
+                <SendIcon />
+                Publish
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => onDelete(insight)}
+            >
+              <Trash2Icon />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <div className="relative aspect-video overflow-hidden rounded-md border border-border bg-muted">
         {hasMedia && insight.media.type === 'image' ? (
           // eslint-disable-next-line @next/next/no-img-element -- blob-storage media URLs; next/image adds no value at this size
