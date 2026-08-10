@@ -47,7 +47,7 @@ export function CategoryRow({
       aria-busy={isPending}
       onDoubleClick={startEdit}
       className={cn(
-        'group flex items-center gap-3 px-5 py-3.5 transition-[opacity,background-color] hover:bg-muted/50',
+        'group inline-flex items-center gap-2 rounded-md border border-border bg-card py-1.5 pr-1.5 pl-3 transition-[opacity,background-color] hover:bg-muted/50',
         isPending && 'opacity-60',
       )}
     >
@@ -67,7 +67,7 @@ export function CategoryRow({
           onFocus={(event) => event.target.select()}
           maxLength={100}
           autoFocus
-          className="h-8 w-56 rounded-md"
+          className="h-7 w-44 rounded-md"
         />
       ) : (
         <p className="min-w-0 text-sm font-medium text-foreground">
