@@ -60,9 +60,17 @@ export type CreateCareerPayload = {
   requirements: string[];
 };
 
+export type UpdateCareerPayload = Partial<CreateCareerPayload> & {
+  isActive?: boolean;
+};
+
 export type CareerResponse = {
   data: Career;
 };
+
+export async function getCareer(id: string): Promise<CareerResponse> {
+  return apiFetch<CareerResponse>(`${CAREERS_PATH}/${id}`);
+}
 
 export async function listCareers(
   params: ListCareersParams = {},
@@ -87,5 +95,22 @@ export async function createCareer(
   return apiFetch<CareerResponse>(CAREERS_PATH, {
     method: 'POST',
     body: payload,
+  });
+}
+
+export async function updateCareer(
+  id: string,
+  payload: UpdateCareerPayload,
+): Promise<CareerResponse> {
+  return apiFetch<CareerResponse>(`${CAREERS_PATH}/${id}`, {
+    method: 'PATCH',
+    body: payload,
+  });
+}
+
+export async function deleteCareer(id: string): Promise<void> {
+  return apiFetch<void>(`${CAREERS_PATH}/${id}`, {
+    method: 'DELETE',
+    responseType: 'none',
   });
 }
