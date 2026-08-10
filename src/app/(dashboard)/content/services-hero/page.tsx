@@ -1,10 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { ServicesHeroForm } from '@/components/sections/content/services-hero/services-hero-form';
 
 export default function ServicesHeroPage() {
-  return (
-    <PlaceholderPage
-      title="Services Hero"
-      description="Manage the services hero media."
-    />
-  );
+  return <ServicesHeroForm />;
 }
