@@ -89,9 +89,25 @@ export type CreateCaseStudyPayload = {
   };
 };
 
+export type UpdateCaseStudyPayload =
+  | {
+      client?: string;
+      categoryId?: string | null;
+      media?: CaseStudyMedia;
+      tags?: string[];
+    }
+  | {
+      locale: 'en' | 'de';
+      content: Partial<CaseStudyLocaleContent>;
+    };
+
 export type CaseStudyResponse = {
   data: CaseStudy;
 };
+
+export async function getCaseStudy(id: string): Promise<CaseStudyResponse> {
+  return apiFetch<CaseStudyResponse>(`${CASE_STUDIES_PATH}/${id}`);
+}
 
 export async function listCaseStudies(
   params: ListCaseStudiesParams = {},
@@ -117,5 +133,11 @@ export async function createCaseStudy(
   return apiFetch<CaseStudyResponse>(CASE_STUDIES_PATH, {
     method: 'POST',
     body: payload,
+  });
+}
+
+export async function publishCaseStudy(id: string): Promise<CaseStudyResponse> {
+  return apiFetch<CaseStudyResponse>(`${CASE_STUDIES_PATH}/${id}/publish`, {
+    method: 'POST',
   });
 }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FolderOpenIcon, PlusIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -12,9 +12,15 @@ import { Dots } from '@/components/shared/Dots';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { CaseStudyCard } from '@/components/sections/content/case-studies/case-study-card';
-import { listCaseStudies } from '@/lib/api/content/case-studies';
+import {
+  listCaseStudies,
+  publishCaseStudy,
+  type CaseStudyListItem,
+} from '@/lib/api/content/case-studies';
+import { toastError, toastInfo, toastSuccess } from '@/lib/toast';
 
 const PAGE_SIZE = 12;
+const LIST_KEY = ['content', 'case-studies'] as const;
 
 type StatusFilter = 'DRAFT' | 'PUBLISHED' | undefined;
 
@@ -26,6 +32,7 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 
 export function CaseStudiesGrid() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<StatusFilter>(undefined);
   const [page, setPage] = useState(1);
 
@@ -42,6 +49,42 @@ export function CaseStudiesGrid() {
   function selectStatus(next: StatusFilter) {
     setStatus(next);
     setPage(1);
+  }
+
+  const publishMutation = useMutation({
+    mutationFn: publishCaseStudy,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: LIST_KEY });
+      toastSuccess('Case study published');
+    },
+    onError: (err) => {
+      toastError('Failed to publish', err.message);
+    },
+  });
+
+  function handlePreview(caseStudy: CaseStudyListItem) {
+    toastInfo(
+      'Preview is not built yet',
+      `“${caseStudy.titles.en || caseStudy.titles.de || caseStudy.client}”`,
+    );
+  }
+
+  function handleEdit(caseStudy: CaseStudyListItem) {
+    toastInfo(
+      'Edit is not built yet',
+      `“${caseStudy.titles.en || caseStudy.titles.de || caseStudy.client}”`,
+    );
+  }
+
+  function handlePublish(caseStudy: CaseStudyListItem) {
+    publishMutation.mutate(caseStudy.id);
+  }
+
+  function handleDelete(caseStudy: CaseStudyListItem) {
+    toastInfo(
+      'Delete is not integrated yet',
+      `“${caseStudy.titles.en || caseStudy.titles.de || caseStudy.client}”`,
+    );
   }
 
   const items = data?.items ?? [];
@@ -115,7 +158,18 @@ export function CaseStudiesGrid() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2">
             {items.map((caseStudy) => (
-              <CaseStudyCard key={caseStudy.id} caseStudy={caseStudy} />
+              <CaseStudyCard
+                key={caseStudy.id}
+                caseStudy={caseStudy}
+                isPending={
+                  publishMutation.isPending &&
+                  publishMutation.variables === caseStudy.id
+                }
+                onPreview={handlePreview}
+                onEdit={handleEdit}
+                onPublish={handlePublish}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
           {hasMore && (

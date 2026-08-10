@@ -1,10 +1,32 @@
-import { ClapperboardIcon } from 'lucide-react';
+'use client';
+
+import {
+  ClapperboardIcon,
+  EllipsisVerticalIcon,
+  EyeIcon,
+  PencilIcon,
+  SendIcon,
+  Trash2Icon,
+} from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { CaseStudyListItem } from '@/lib/api/content/case-studies';
 
 type CaseStudyCardProps = {
   caseStudy: CaseStudyListItem;
+  isPending?: boolean;
+  onPreview: (caseStudy: CaseStudyListItem) => void;
+  onEdit: (caseStudy: CaseStudyListItem) => void;
+  onPublish: (caseStudy: CaseStudyListItem) => void;
+  onDelete: (caseStudy: CaseStudyListItem) => void;
 };
 
 function isLocaleComplete(
@@ -18,7 +40,14 @@ function isLocaleComplete(
   );
 }
 
-export function CaseStudyCard({ caseStudy }: CaseStudyCardProps) {
+export function CaseStudyCard({
+  caseStudy,
+  isPending = false,
+  onPreview,
+  onEdit,
+  onPublish,
+  onDelete,
+}: CaseStudyCardProps) {
   const title =
     caseStudy.titles.en || caseStudy.titles.de || 'Untitled case study';
   const summary = caseStudy.summaries.en || caseStudy.summaries.de;
@@ -29,7 +58,59 @@ export function CaseStudyCard({ caseStudy }: CaseStudyCardProps) {
   const hasMedia = Boolean(caseStudy.media?.url);
 
   return (
-    <article className="group flex min-h-full min-w-0 flex-col border border-border bg-background p-4 transition-colors duration-300 hover:bg-muted/50 sm:p-5">
+    <article
+      aria-busy={isPending}
+      className={cn(
+        'group relative flex min-h-full min-w-0 flex-col border border-border bg-background p-4 transition-[opacity,background-color] duration-300 hover:bg-muted/50 sm:p-5',
+        isPending && 'opacity-60',
+      )}
+    >
+      <div className="absolute top-3 right-3 z-10 opacity-0 transition-opacity group-focus-within:opacity-100 md:group-hover:opacity-100">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="bg-foreground text-background hover:bg-foreground/90 hover:text-background"
+              />
+            }
+          >
+            <EllipsisVerticalIcon />
+            <span className="sr-only">Case study actions</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="bottom"
+            align="end"
+            sideOffset={4}
+            className="w-44"
+          >
+            <DropdownMenuItem onClick={() => onPreview(caseStudy)}>
+              <EyeIcon />
+              Preview
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(caseStudy)}>
+              <PencilIcon />
+              Edit
+            </DropdownMenuItem>
+            {!isPublished && (
+              <DropdownMenuItem onClick={() => onPublish(caseStudy)}>
+                <SendIcon />
+                Publish
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => onDelete(caseStudy)}
+            >
+              <Trash2Icon />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <div className="relative aspect-video overflow-hidden rounded-md border border-border bg-muted">
         {hasMedia && caseStudy.media.type === 'image' ? (
           // eslint-disable-next-line @next/next/no-img-element -- blob-storage media URLs; next/image adds no value at this size
