@@ -1,7 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { InsightsGrid } from '@/components/sections/content/insights/insights-grid';
 
 export default function InsightsPage() {
-  return (
-    <PlaceholderPage title="Insights" description="Manage insight articles." />
-  );
+  return <InsightsGrid />;
 }
