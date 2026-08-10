@@ -5,6 +5,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -29,8 +30,10 @@ type TestimonialFormDialogProps = {
   onOpenChange: (open: boolean) => void;
   testimonial?: Testimonial | null;
   initialValues?: TestimonialFormValues | null;
+  initialMakePrimary?: boolean;
+  hasPrimary: boolean;
   isSaving: boolean;
-  onSave: (values: TestimonialFormValues) => void;
+  onSave: (values: TestimonialFormValues, makePrimary: boolean) => void;
 };
 
 export function TestimonialFormDialog({
@@ -38,6 +41,8 @@ export function TestimonialFormDialog({
   onOpenChange,
   testimonial,
   initialValues,
+  initialMakePrimary = false,
+  hasPrimary,
   isSaving,
   onSave,
 }: TestimonialFormDialogProps) {
@@ -58,6 +63,8 @@ export function TestimonialFormDialog({
           key={testimonial?.id ?? 'new'}
           testimonial={testimonial}
           initialValues={initialValues}
+          initialMakePrimary={initialMakePrimary}
+          hasPrimary={hasPrimary}
           isSaving={isSaving}
           onOpenChange={onOpenChange}
           onSave={onSave}
@@ -70,18 +77,25 @@ export function TestimonialFormDialog({
 function TestimonialFormContent({
   testimonial,
   initialValues,
+  initialMakePrimary,
+  hasPrimary,
   isSaving,
   onOpenChange,
   onSave,
 }: {
   testimonial?: Testimonial | null;
   initialValues?: TestimonialFormValues | null;
+  initialMakePrimary?: boolean;
+  hasPrimary: boolean;
   isSaving: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (values: TestimonialFormValues) => void;
+  onSave: (values: TestimonialFormValues, makePrimary: boolean) => void;
 }) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [makePrimary, setMakePrimary] = useState(
+    initialMakePrimary ?? testimonial?.isPrimary ?? false,
+  );
 
   const form = useForm<TestimonialFormValues>({
     resolver: zodResolver(testimonialFormSchema),
@@ -115,7 +129,7 @@ function TestimonialFormContent({
       return;
     }
     setUploadError(null);
-    onSave(values);
+    onSave(values, makePrimary);
   }
 
   return (
@@ -211,6 +225,33 @@ function TestimonialFormContent({
           </p>
         )}
       </div>
+
+      {!testimonial?.isPrimary && (testimonial || !hasPrimary) && (
+        <div className="space-y-2">
+          <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3">
+            <Checkbox
+              id="make-primary"
+              checked={makePrimary}
+              onCheckedChange={setMakePrimary}
+              disabled={isSaving || isUploading}
+            />
+            <div className="space-y-0.5">
+              <Label
+                htmlFor="make-primary"
+                className="text-sm leading-none font-medium text-foreground"
+              >
+                {testimonial
+                  ? 'Make this the primary testimonial'
+                  : 'Feature as primary testimonial'}
+              </Label>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                The primary quote is featured on the managed-outsourcing
+                section. It will replace the current primary.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <DialogFooter>
         <Button
