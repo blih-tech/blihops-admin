@@ -1,10 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { CategoriesList } from '@/components/sections/content/categories/categories-list';
 
 export default function CategoriesPage() {
-  return (
-    <PlaceholderPage
-      title="Categories"
-      description="Manage content categories."
-    />
-  );
+  return <CategoriesList />;
 }
