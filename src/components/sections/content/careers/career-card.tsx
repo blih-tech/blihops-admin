@@ -1,15 +1,110 @@
+'use client';
+
+import { useRef } from 'react';
+import {
+  EllipsisVerticalIcon,
+  EyeIcon,
+  PencilIcon,
+  PowerIcon,
+  Trash2Icon,
+} from 'lucide-react';
+
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { CareerListItem } from '@/lib/api/content/careers';
 
 type CareerCardProps = {
   career: CareerListItem;
+  isPending?: boolean;
+  onPreview: (career: CareerListItem) => void;
+  onEdit: (career: CareerListItem) => void;
+  onToggleActive: (career: CareerListItem) => void;
+  onDelete: (career: CareerListItem) => void;
 };
 
-export function CareerCard({ career }: CareerCardProps) {
+export function CareerCard({
+  career,
+  isPending = false,
+  onPreview,
+  onEdit,
+  onToggleActive,
+  onDelete,
+}: CareerCardProps) {
+  const cardRef = useRef<HTMLElement>(null);
   const isActive = career.isActive;
 
   return (
-    <article className="group flex min-h-full min-w-0 flex-col border border-border bg-background p-4 transition-colors duration-300 hover:bg-muted/50 sm:p-5">
+    <article
+      ref={cardRef}
+      aria-busy={isPending}
+      role="button"
+      tabIndex={0}
+      onClick={() => onPreview(career)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onPreview(career);
+        }
+      }}
+      className={cn(
+        'group relative flex min-h-full min-w-0 cursor-pointer flex-col border border-border bg-background p-4 transition-[opacity,background-color] duration-300 hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/30 sm:p-5',
+        isPending && 'opacity-60',
+      )}
+    >
+      <div
+        onClick={(event) => event.stopPropagation()}
+        className="absolute top-3 right-3 z-10 opacity-0 transition-opacity group-focus-within:opacity-100 md:group-hover:opacity-100"
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="bg-foreground text-background hover:bg-foreground/90 hover:text-background"
+              />
+            }
+          >
+            <EllipsisVerticalIcon />
+            <span className="sr-only">Career role actions</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="bottom"
+            align="end"
+            sideOffset={4}
+            className="w-44"
+          >
+            <DropdownMenuItem onClick={() => onPreview(career)}>
+              <EyeIcon />
+              Preview
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(career)}>
+              <PencilIcon />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onToggleActive(career)}>
+              <PowerIcon />
+              {isActive ? 'Make inactive' : 'Make active'}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => onDelete(career)}
+            >
+              <Trash2Icon />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <div className="flex flex-1 flex-col pt-1">
         <p className="font-sans text-[11px] font-medium text-muted-foreground">
           {career.department} · {career.location} · {career.employmentType}
