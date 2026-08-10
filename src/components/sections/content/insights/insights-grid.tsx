@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { NewspaperIcon } from 'lucide-react';
+import { NewspaperIcon, PlusIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,8 @@ import { Dots } from '@/components/shared/Dots';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { InsightCard } from '@/components/sections/content/insights/insight-card';
-import { listInsights } from '@/lib/api/content/insights';
+import { listInsights, type InsightListItem } from '@/lib/api/content/insights';
+import { toastInfo } from '@/lib/toast';
 
 const PAGE_SIZE = 12;
 
@@ -24,6 +26,7 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 ];
 
 export function InsightsGrid() {
+  const router = useRouter();
   const [status, setStatus] = useState<StatusFilter>(undefined);
   const [page, setPage] = useState(1);
 
@@ -42,20 +45,54 @@ export function InsightsGrid() {
     setPage(1);
   }
 
+  function handlePreview(insight: InsightListItem) {
+    toastInfo(
+      'Preview is not built yet',
+      `“${insight.titles.en || insight.titles.de || insight.author}”`,
+    );
+  }
+
+  function handleEdit(insight: InsightListItem) {
+    toastInfo(
+      'Edit is not built yet',
+      `“${insight.titles.en || insight.titles.de || insight.author}”`,
+    );
+  }
+
+  function handlePublish(insight: InsightListItem) {
+    toastInfo(
+      'Publish is not integrated yet',
+      `“${insight.titles.en || insight.titles.de || insight.author}”`,
+    );
+  }
+
+  function handleDelete(insight: InsightListItem) {
+    toastInfo(
+      'Delete is not integrated yet',
+      `“${insight.titles.en || insight.titles.de || insight.author}”`,
+    );
+  }
+
   const items = data?.items ?? [];
   const total = data?.meta.total ?? 0;
   const hasMore = data ? page < data.meta.totalPages : false;
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-          Insights
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Bilingual insight articles shown on the website. Both English and
-          German are required before publishing.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            Insights
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Bilingual insight articles shown on the website. Both English and
+            German are required before publishing.
+          </p>
+        </div>
+        <Button onClick={() => router.push('/content/insights/new')}>
+          <PlusIcon data-icon="inline-start" />
+          Add insight
+        </Button>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -107,7 +144,14 @@ export function InsightsGrid() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2">
             {items.map((insight) => (
-              <InsightCard key={insight.id} insight={insight} />
+              <InsightCard
+                key={insight.id}
+                insight={insight}
+                onPreview={handlePreview}
+                onEdit={handleEdit}
+                onPublish={handlePublish}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
           {hasMore && (
