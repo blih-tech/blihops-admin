@@ -55,3 +55,10 @@ export async function updateTestimonial(
     body: payload,
   });
 }
+
+export async function deleteTestimonial(id: string): Promise<void> {
+  return apiFetch<void>(`${TESTIMONIALS_PATH}/${id}`, {
+    method: 'DELETE',
+    responseType: 'none',
+  });
+}
