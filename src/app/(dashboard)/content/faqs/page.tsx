@@ -1,5 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { FaqsList } from '@/components/sections/content/faqs/faqs-list';
 
 export default function FaqsPage() {
-  return <PlaceholderPage title="FAQs" description="Manage pilot FAQs." />;
+  return <FaqsList />;
 }
