@@ -64,6 +64,7 @@ export function CategoryFormDialog({
           </DialogDescription>
         </DialogHeader>
         <form
+          key={open ? 'open' : 'closed'}
           onSubmit={form.handleSubmit(handleSubmit)}
           className="flex flex-col gap-5"
         >

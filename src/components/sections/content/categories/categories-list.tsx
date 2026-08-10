@@ -10,9 +10,12 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { CategoryRow } from '@/components/sections/content/categories/category-row';
 import { CategoryFormDialog } from '@/components/sections/content/categories/category-form-dialog';
+import { ConfirmDeleteCategoryDialog } from '@/components/sections/content/categories/confirm-delete-category-dialog';
 import {
   createCategory,
+  deleteCategory,
   listCategories,
+  updateCategory,
   type CategoriesResponse,
   type Category,
 } from '@/lib/api/content/categories';
@@ -31,6 +34,9 @@ export function CategoriesList() {
   const [formOpen, setFormOpen] = useState(false);
   const [draftName, setDraftName] = useState<string | null>(null);
   const [pendingRowId, setPendingRowId] = useState<string | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(
+    null,
+  );
 
   const createMutation = useMutation({
     mutationFn: createCategory,
@@ -82,6 +88,65 @@ export function CategoriesList() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      updateCategory(id, { name }),
+    onMutate: async ({ id, name }) => {
+      const previous = takeSnapshot<CategoriesResponse>(
+        queryClient,
+        CATEGORIES_KEY,
+      );
+      queryClient.setQueryData<CategoriesResponse>(CATEGORIES_KEY, (old) =>
+        old
+          ? {
+              ...old,
+              items: old.items.map((item) =>
+                item.id === id ? { ...item, name } : item,
+              ),
+            }
+          : old,
+      );
+      return { previous };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY });
+      toastSuccess('Category renamed');
+    },
+    onError: (err, _variables, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, CATEGORIES_KEY, context.previous);
+      }
+      toastError('Failed to rename category', err.message);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteCategory,
+    onMutate: async (id) => {
+      const previous = takeSnapshot<CategoriesResponse>(
+        queryClient,
+        CATEGORIES_KEY,
+      );
+      queryClient.setQueryData<CategoriesResponse>(CATEGORIES_KEY, (old) =>
+        old
+          ? { ...old, items: old.items.filter((item) => item.id !== id) }
+          : old,
+      );
+      setDeletingCategory(null);
+      return { previous };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY });
+      toastSuccess('Category deleted');
+    },
+    onError: (err, _id, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, CATEGORIES_KEY, context.previous);
+      }
+      toastError('Failed to delete category', err.message);
+    },
+  });
+
   const items = data?.items ?? [];
   const total = data?.items.length ?? 0;
 
@@ -92,6 +157,16 @@ export function CategoriesList() {
 
   function handleSave(name: string) {
     createMutation.mutate({ name });
+  }
+
+  function handleRename(category: Category, name: string) {
+    updateMutation.mutate({ id: category.id, name });
+  }
+
+  function handleConfirmDelete() {
+    if (deletingCategory) {
+      deleteMutation.mutate(deletingCategory.id);
+    }
   }
 
   return (
@@ -113,9 +188,15 @@ export function CategoriesList() {
       </div>
 
       {!isPending && !error && (
-        <p className="font-mono text-[10px] text-muted-foreground">
-          {total} {total === 1 ? 'category' : 'categories'}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="font-mono text-[10px] text-muted-foreground">
+            {total} {total === 1 ? 'category' : 'categories'}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Double-click a category to rename · hit Enter to save · hover the ✕
+            to delete
+          </p>
+        </div>
       )}
 
       {isPending ? (
@@ -141,15 +222,22 @@ export function CategoriesList() {
           }
         />
       ) : (
-        <div className="divide-y divide-border rounded-md border border-border bg-card">
-          {items.map((category) => (
-            <div key={category.id}>
+        <div className="flex flex-wrap gap-2">
+          {items.map((category) => {
+            const isRowPending =
+              pendingRowId === category.id ||
+              (updateMutation.isPending &&
+                updateMutation.variables?.id === category.id);
+            return (
               <CategoryRow
+                key={category.id}
                 category={category}
-                isPending={pendingRowId === category.id}
+                isPending={isRowPending}
+                onRename={handleRename}
+                onDeleteClick={setDeletingCategory}
               />
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -160,16 +248,31 @@ export function CategoriesList() {
         isSaving={createMutation.isPending}
         onSave={handleSave}
       />
+
+      <ConfirmDeleteCategoryDialog
+        open={Boolean(deletingCategory)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingCategory(null);
+          }
+        }}
+        category={deletingCategory}
+        isDeleting={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }
 
 function CategoriesSkeleton() {
   return (
-    <div className="divide-y divide-border rounded-md border border-border bg-card">
+    <div className="flex flex-wrap gap-2">
       {Array.from({ length: 6 }).map((_, index) => (
-        <div key={index} className="px-5 py-3.5">
-          <Skeleton className="h-4 w-2/5 rounded-md" />
+        <div
+          key={index}
+          className="rounded-md border border-border bg-card px-3 py-1.5"
+        >
+          <Skeleton className="h-4 w-24 rounded-md" />
         </div>
       ))}
     </div>
