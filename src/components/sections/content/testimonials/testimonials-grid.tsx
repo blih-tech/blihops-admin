@@ -11,8 +11,10 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { TestimonialCard } from '@/components/sections/content/testimonials/testimonial-card';
 import { PrimaryTestimonialCard } from '@/components/sections/content/testimonials/primary-testimonial-card';
 import { TestimonialFormDialog } from '@/components/sections/content/testimonials/testimonial-form-dialog';
+import { ConfirmDeleteTestimonialDialog } from '@/components/sections/content/testimonials/confirm-delete-testimonial-dialog';
 import {
   createTestimonial,
+  deleteTestimonial,
   listTestimonials,
   updateTestimonial,
   type TestimonialsResponse,
@@ -33,6 +35,8 @@ export function TestimonialsGrid() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingTestimonial, setEditingTestimonial] =
+    useState<Testimonial | null>(null);
+  const [deletingTestimonial, setDeletingTestimonial] =
     useState<Testimonial | null>(null);
   const [pendingCardId, setPendingCardId] = useState<string | null>(null);
   const [draftValues, setDraftValues] = useState<TestimonialFormValues | null>(
@@ -137,6 +141,36 @@ export function TestimonialsGrid() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteTestimonial,
+    onMutate: async (id) => {
+      const previous = takeSnapshot<TestimonialsResponse>(
+        queryClient,
+        TESTIMONIALS_KEY,
+      );
+      queryClient.setQueryData<TestimonialsResponse>(TESTIMONIALS_KEY, (old) =>
+        old
+          ? {
+              ...old,
+              items: old.items.filter((item) => item.id !== id),
+            }
+          : old,
+      );
+      setDeletingTestimonial(null);
+      return { previous };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: TESTIMONIALS_KEY });
+      toastSuccess('Testimonial deleted');
+    },
+    onError: (err, _id, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, TESTIMONIALS_KEY, context.previous);
+      }
+      toastError('Failed to delete testimonial', err.message);
+    },
+  });
+
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   function openCreate() {
@@ -159,6 +193,12 @@ export function TestimonialsGrid() {
       });
     } else {
       createMutation.mutate(values);
+    }
+  }
+
+  function handleConfirmDelete() {
+    if (deletingTestimonial) {
+      deleteMutation.mutate(deletingTestimonial.id);
     }
   }
 
@@ -215,6 +255,7 @@ export function TestimonialsGrid() {
                   testimonial={testimonial}
                   isPending={isCardPending}
                   onEdit={openEdit}
+                  onDelete={setDeletingTestimonial}
                 />
               </div>
             ) : (
@@ -223,6 +264,7 @@ export function TestimonialsGrid() {
                 testimonial={testimonial}
                 isPending={isCardPending}
                 onEdit={openEdit}
+                onDelete={setDeletingTestimonial}
               />
             );
           })}
@@ -236,6 +278,17 @@ export function TestimonialsGrid() {
         initialValues={draftValues}
         isSaving={isSaving}
         onSave={handleSave}
+      />
+      <ConfirmDeleteTestimonialDialog
+        open={Boolean(deletingTestimonial)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingTestimonial(null);
+          }
+        }}
+        testimonial={deletingTestimonial}
+        isDeleting={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );

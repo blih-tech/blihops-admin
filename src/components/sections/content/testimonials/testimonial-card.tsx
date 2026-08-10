@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import { EllipsisVerticalIcon, PencilIcon } from 'lucide-react';
+import { EllipsisVerticalIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { QuoteMark } from '@/components/sections/content/testimonials/quote-mark';
@@ -18,12 +19,14 @@ type TestimonialCardProps = {
   testimonial: Testimonial;
   isPending?: boolean;
   onEdit: (testimonial: Testimonial) => void;
+  onDelete: (testimonial: Testimonial) => void;
 };
 
 export function TestimonialCard({
   testimonial,
   isPending = false,
   onEdit,
+  onDelete,
 }: TestimonialCardProps) {
   const cardRef = useRef<HTMLElement>(null);
 
@@ -83,6 +86,14 @@ export function TestimonialCard({
             <DropdownMenuItem onClick={() => onEdit(testimonial)}>
               <PencilIcon />
               Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => onDelete(testimonial)}
+            >
+              <Trash2Icon />
+              Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
