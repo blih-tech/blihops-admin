@@ -17,6 +17,27 @@ export type TestimonialsResponse = {
   meta: Record<string, never>;
 };
 
+export type CreateTestimonialPayload = {
+  avatarUrl: string;
+  name: string;
+  role: string;
+  company: string;
+  quote: string;
+};
+
+export type TestimonialResponse = {
+  data: Testimonial;
+};
+
 export async function listTestimonials(): Promise<TestimonialsResponse> {
   return apiFetch<TestimonialsResponse>(TESTIMONIALS_PATH);
+}
+
+export async function createTestimonial(
+  payload: CreateTestimonialPayload,
+): Promise<TestimonialResponse> {
+  return apiFetch<TestimonialResponse>(TESTIMONIALS_PATH, {
+    method: 'POST',
+    body: payload,
+  });
 }
