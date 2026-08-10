@@ -12,6 +12,7 @@ import { Dots } from '@/components/shared/Dots';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { CaseStudyCard } from '@/components/sections/content/case-studies/case-study-card';
+import { CaseStudyPreviewDialog } from '@/components/sections/content/case-studies/case-study-preview-dialog';
 import { ConfirmDeleteCaseStudyDialog } from '@/components/sections/content/case-studies/confirm-delete-case-study-dialog';
 import {
   deleteCaseStudy,
@@ -21,7 +22,7 @@ import {
   type CaseStudiesResponse,
 } from '@/lib/api/content/case-studies';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
-import { toastError, toastInfo, toastSuccess } from '@/lib/toast';
+import { toastError, toastSuccess } from '@/lib/toast';
 
 const PAGE_SIZE = 12;
 const LIST_KEY = ['content', 'case-studies'] as const;
@@ -39,6 +40,8 @@ export function CaseStudiesGrid() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<StatusFilter>(undefined);
   const [page, setPage] = useState(1);
+  const [previewCaseStudy, setPreviewCaseStudy] =
+    useState<CaseStudyListItem | null>(null);
   const [deletingCaseStudy, setDeletingCaseStudy] =
     useState<CaseStudyListItem | null>(null);
 
@@ -98,10 +101,7 @@ export function CaseStudiesGrid() {
   });
 
   function handlePreview(caseStudy: CaseStudyListItem) {
-    toastInfo(
-      'Preview is not built yet',
-      `“${caseStudy.titles.en || caseStudy.titles.de || caseStudy.client}”`,
-    );
+    setPreviewCaseStudy(caseStudy);
   }
 
   function handleEdit(caseStudy: CaseStudyListItem) {
@@ -221,6 +221,16 @@ export function CaseStudiesGrid() {
           )}
         </>
       )}
+
+      <CaseStudyPreviewDialog
+        open={Boolean(previewCaseStudy)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewCaseStudy(null);
+          }
+        }}
+        caseStudy={previewCaseStudy}
+      />
 
       <ConfirmDeleteCaseStudyDialog
         open={Boolean(deletingCaseStudy)}
