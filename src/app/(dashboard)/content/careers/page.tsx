@@ -1,7 +1,5 @@
-import { PlaceholderPage } from '@/components/shared/PlaceholderPage';
+import { CareersGrid } from '@/components/sections/content/careers/careers-grid';
 
 export default function CareersPage() {
-  return (
-    <PlaceholderPage title="Careers" description="Manage careers roles." />
-  );
+  return <CareersGrid />;
 }
