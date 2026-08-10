@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -32,7 +33,12 @@ import { MediaField } from '@/components/sections/content/case-studies/media-fie
 import { TagInput } from '@/components/sections/content/case-studies/tag-input';
 import {
   createInsight,
+  getInsight,
+  updateInsight,
   type CreateInsightPayload,
+  type Insight,
+  type InsightLocaleContent,
+  type UpdateInsightPayload,
 } from '@/lib/api/content/insights';
 import { listCategories } from '@/lib/api/content/categories';
 import { listTags } from '@/lib/api/content/tags';
@@ -57,12 +63,7 @@ function buildPayload(values: InsightFormValues): CreateInsightPayload {
   for (const locale of ['en', 'de'] as const) {
     const localeContent = values.content[locale];
     if (!localeContent) continue;
-    const body = (localeContent.body ?? [])
-      .filter((section) => section.section.trim().length > 0)
-      .map((section) => ({
-        section: section.section.trim(),
-        content: section.content ?? '',
-      }));
+    const body = buildBody(localeContent.body);
     const hasAny = Boolean(
       localeContent.title ||
       localeContent.slug ||
@@ -78,6 +79,7 @@ function buildPayload(values: InsightFormValues): CreateInsightPayload {
       };
     }
   }
+
   return {
     author: values.author,
     ...(values.readTimeMinutes !== undefined &&
@@ -92,11 +94,104 @@ function buildPayload(values: InsightFormValues): CreateInsightPayload {
   };
 }
 
-export function InsightForm() {
+type InsightSection = { section: string; content: string };
+
+function buildBody(body: InsightSection[] | undefined): InsightSection[] {
+  return (body ?? [])
+    .filter((section) => section.section.trim().length > 0)
+    .map((section) => ({
+      section: section.section.trim(),
+      content: section.content ?? '',
+    }));
+}
+
+function buildEditPatches(values: InsightFormValues): UpdateInsightPayload[] {
+  const patches: UpdateInsightPayload[] = [
+    {
+      author: values.author,
+      ...(values.readTimeMinutes !== undefined &&
+      values.readTimeMinutes !== null &&
+      !Number.isNaN(values.readTimeMinutes)
+        ? { readTimeMinutes: values.readTimeMinutes }
+        : {}),
+      ...(values.categoryId !== undefined
+        ? { categoryId: values.categoryId ?? null }
+        : {}),
+      ...(values.media ? { media: values.media } : {}),
+      ...(values.tags && values.tags.length > 0 ? { tags: values.tags } : {}),
+    },
+  ];
+
+  for (const locale of ['en', 'de'] as const) {
+    const localeContent = values.content[locale];
+    if (!localeContent) continue;
+    const body = buildBody(localeContent.body);
+    const content: Partial<InsightLocaleContent> = {};
+    if (localeContent.title) content.title = localeContent.title;
+    if (localeContent.slug) content.slug = localeContent.slug;
+    if (localeContent.excerpt) content.excerpt = localeContent.excerpt;
+    if (body.length > 0) content.body = body;
+    if (Object.keys(content).length > 0) {
+      patches.push({ locale, content });
+    }
+  }
+
+  return patches;
+}
+
+function localeDefaults(locale?: Partial<InsightLocaleContent>): {
+  title: string;
+  slug: string;
+  excerpt: string;
+  body: InsightSection[];
+} {
+  return {
+    title: locale?.title ?? '',
+    slug: locale?.slug ?? '',
+    excerpt: locale?.excerpt ?? '',
+    body: locale?.body ?? [],
+  };
+}
+
+export function InsightForm({ insightId }: { insightId?: string }) {
+  const isEdit = Boolean(insightId);
+  const detailQuery = useQuery({
+    queryKey: ['content', 'insights', 'detail', insightId],
+    queryFn: () => getInsight(insightId as string),
+    enabled: isEdit,
+  });
+
+  if (isEdit && detailQuery.isPending) {
+    return <EditSkeleton />;
+  }
+
+  if (isEdit && detailQuery.isError) {
+    return (
+      <ErrorState
+        title="Failed to load insight"
+        message={detailQuery.error.message}
+        onRetry={() => {
+          void detailQuery.refetch();
+        }}
+      />
+    );
+  }
+
+  return (
+    <InsightFormFields
+      key={insightId ?? 'new'}
+      initialData={detailQuery.data?.data ?? null}
+    />
+  );
+}
+
+function InsightFormFields({ initialData }: { initialData: Insight | null }) {
+  const isEdit = initialData !== null;
   const router = useRouter();
   const queryClient = useQueryClient();
   const [locale, setLocale] = useState<Locale>('en');
   const [isUploading, setIsUploading] = useState(false);
+  const editId = initialData?.id ?? null;
 
   const categoriesQuery = useQuery({
     queryKey: ['content', 'categories'],
@@ -110,14 +205,20 @@ export function InsightForm() {
   const form = useForm<InsightFormValues>({
     resolver: zodResolver(insightFormSchema),
     defaultValues: {
-      author: '',
-      readTimeMinutes: undefined,
-      categoryId: null,
-      tags: [],
-      media: undefined,
+      author: initialData?.author ?? '',
+      readTimeMinutes:
+        initialData && initialData.readTimeMinutes > 0
+          ? initialData.readTimeMinutes
+          : undefined,
+      categoryId: initialData?.category?.id ?? null,
+      tags: initialData?.tags.map((tag) => tag.id) ?? [],
+      media:
+        initialData?.media && initialData.media.url
+          ? initialData.media
+          : undefined,
       content: {
-        en: { title: '', slug: '', excerpt: '', body: [] },
-        de: { title: '', slug: '', excerpt: '', body: [] },
+        en: localeDefaults(initialData?.content?.en),
+        de: localeDefaults(initialData?.content?.de),
       },
     },
   });
@@ -140,11 +241,35 @@ export function InsightForm() {
     },
   });
 
-  const isSaving = createMutation.isPending;
+  const editMutation = useMutation({
+    mutationFn: async (values: InsightFormValues) => {
+      if (editId === null) {
+        throw new Error('Insight not found');
+      }
+      const patches = buildEditPatches(values);
+      for (const patch of patches) {
+        await updateInsight(editId, patch);
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: LIST_KEY });
+      toastSuccess('Insight updated');
+      router.push('/content/insights');
+    },
+    onError: (err) => {
+      toastError('Failed to update insight', err.message);
+    },
+  });
+
+  const isSaving = createMutation.isPending || editMutation.isPending;
   const canSubmit = Boolean(author.trim()) && !isUploading && !isSaving;
 
   function handleSubmit(values: InsightFormValues) {
-    createMutation.mutate(values);
+    if (isEdit) {
+      editMutation.mutate(values);
+    } else {
+      createMutation.mutate(values);
+    }
   }
 
   if (categoriesQuery.isError || tagsQuery.isError) {
@@ -176,11 +301,10 @@ export function InsightForm() {
             Back to insights
           </Link>
           <h1 className="mt-2 font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-            Add Insight
+            {isEdit ? 'Edit Insight' : 'Add Insight'}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Create a draft. Both English and German are required before
-            publishing.
+            Both English and German are required before publishing.
           </p>
         </div>
         <Button
@@ -320,7 +444,13 @@ export function InsightForm() {
             Cancel
           </Button>
           <Button type="submit" disabled={!canSubmit}>
-            {isSaving ? <Dots dots={3} /> : 'Save draft'}
+            {isSaving ? (
+              <Dots dots={3} />
+            ) : isEdit ? (
+              'Save changes'
+            ) : (
+              'Save draft'
+            )}
           </Button>
         </div>
       </form>
@@ -466,6 +596,17 @@ function LocaleFields({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function EditSkeleton() {
+  return (
+    <div className="flex flex-1 flex-col gap-6">
+      <Skeleton className="h-8 w-56 rounded-md" />
+      <Skeleton className="mt-2 h-4 w-96 max-w-full rounded-md" />
+      <Skeleton className="h-40 w-full rounded-md" />
+      <Skeleton className="h-96 w-full rounded-md" />
     </div>
   );
 }
