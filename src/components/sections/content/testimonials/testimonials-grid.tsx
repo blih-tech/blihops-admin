@@ -1,33 +1,121 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { MessageSquareQuoteIcon } from 'lucide-react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { MessageSquareQuoteIcon, PlusIcon } from 'lucide-react';
 
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { TestimonialCard } from '@/components/sections/content/testimonials/testimonial-card';
 import { PrimaryTestimonialCard } from '@/components/sections/content/testimonials/primary-testimonial-card';
-import { listTestimonials } from '@/lib/api/content/testimonials';
+import { TestimonialFormDialog } from '@/components/sections/content/testimonials/testimonial-form-dialog';
+import {
+  createTestimonial,
+  listTestimonials,
+  type TestimonialsResponse,
+  type Testimonial,
+} from '@/lib/api/content/testimonials';
+import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
+import { toastError, toastSuccess } from '@/lib/toast';
+import type { TestimonialFormValues } from '@/lib/validators/testimonial';
 
 const TESTIMONIALS_KEY = ['content', 'testimonials'] as const;
 
 export function TestimonialsGrid() {
+  const queryClient = useQueryClient();
   const { data, error, isPending, refetch } = useQuery({
     queryKey: TESTIMONIALS_KEY,
     queryFn: listTestimonials,
   });
 
+  const [formOpen, setFormOpen] = useState(false);
+  const [pendingCardId, setPendingCardId] = useState<string | null>(null);
+  const [draftValues, setDraftValues] = useState<TestimonialFormValues | null>(
+    null,
+  );
+
+  const createMutation = useMutation({
+    mutationFn: createTestimonial,
+    onMutate: async (values) => {
+      const previous = takeSnapshot<TestimonialsResponse>(
+        queryClient,
+        TESTIMONIALS_KEY,
+      );
+      const tempId = `temp-${crypto.randomUUID()}`;
+      const tempTestimonial: Testimonial = {
+        id: tempId,
+        avatarUrl: values.avatarUrl,
+        name: values.name,
+        role: values.role,
+        company: values.company,
+        quote: values.quote,
+        isPrimary: false,
+      };
+      queryClient.setQueryData<TestimonialsResponse>(TESTIMONIALS_KEY, (old) =>
+        old
+          ? { ...old, items: [...old.items, tempTestimonial] }
+          : { items: [tempTestimonial], meta: {} },
+      );
+      setDraftValues(values);
+      setPendingCardId(tempId);
+      setFormOpen(false);
+      return { previous, tempId };
+    },
+    onSuccess: (result, _values, context) => {
+      queryClient.setQueryData<TestimonialsResponse>(TESTIMONIALS_KEY, (old) =>
+        old
+          ? {
+              ...old,
+              items: old.items.map((item) =>
+                item.id === context.tempId ? result.data : item,
+              ),
+            }
+          : old,
+      );
+      void queryClient.invalidateQueries({ queryKey: TESTIMONIALS_KEY });
+      toastSuccess('Testimonial added');
+      setDraftValues(null);
+      setFormOpen(false);
+    },
+    onError: (err, _values, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, TESTIMONIALS_KEY, context.previous);
+      }
+      setFormOpen(true);
+      toastError('Failed to add testimonial', err.message);
+    },
+    onSettled: () => {
+      setPendingCardId(null);
+    },
+  });
+
+  function openCreate() {
+    setDraftValues(null);
+    setFormOpen(true);
+  }
+
+  function handleSave(values: TestimonialFormValues) {
+    createMutation.mutate(values);
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-          Testimonials
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Quotes shown on the home page. One testimonial is marked as primary
-          and featured on the managed-outsourcing section.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            Testimonials
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Quotes shown on the home page. One testimonial is marked as primary
+            and featured on the managed-outsourcing section.
+          </p>
+        </div>
+        <Button onClick={openCreate}>
+          <PlusIcon data-icon="inline-start" />
+          Add testimonial
+        </Button>
       </div>
 
       {isPending ? (
@@ -35,7 +123,7 @@ export function TestimonialsGrid() {
       ) : error ? (
         <ErrorState
           title="Failed to load testimonials"
-          message={error?.message}
+          message={error.message}
           onRetry={() => {
             void refetch();
           }}
@@ -45,6 +133,12 @@ export function TestimonialsGrid() {
           icon={<MessageSquareQuoteIcon className="size-6" />}
           title="No testimonials yet"
           description="Add your first testimonial to show client quotes on the home page."
+          action={
+            <Button onClick={openCreate}>
+              <PlusIcon data-icon="inline-start" />
+              Add testimonial
+            </Button>
+          }
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -54,11 +148,23 @@ export function TestimonialsGrid() {
                 <PrimaryTestimonialCard testimonial={testimonial} />
               </div>
             ) : (
-              <TestimonialCard key={testimonial.id} testimonial={testimonial} />
+              <TestimonialCard
+                key={testimonial.id}
+                testimonial={testimonial}
+                isPending={pendingCardId === testimonial.id}
+              />
             ),
           )}
         </div>
       )}
+
+      <TestimonialFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        initialValues={draftValues}
+        isSaving={createMutation.isPending}
+        onSave={handleSave}
+      />
     </div>
   );
 }
@@ -66,7 +172,7 @@ export function TestimonialsGrid() {
 function TestimonialsSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <Skeleton className="h-48 md:col-span-2 rounded-none" />
+      <Skeleton className="h-48 rounded-none md:col-span-2" />
       {Array.from({ length: 3 }).map((_, index) => (
         <Skeleton key={index} className="h-48 rounded-none" />
       ))}
