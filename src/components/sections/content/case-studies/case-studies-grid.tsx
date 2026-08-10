@@ -70,10 +70,7 @@ export function CaseStudiesGrid() {
   }
 
   function handleEdit(caseStudy: CaseStudyListItem) {
-    toastInfo(
-      'Edit is not built yet',
-      `“${caseStudy.titles.en || caseStudy.titles.de || caseStudy.client}”`,
-    );
+    router.push(`/content/case-studies/${caseStudy.id}`);
   }
 
   function handlePublish(caseStudy: CaseStudyListItem) {

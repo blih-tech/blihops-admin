@@ -136,6 +136,16 @@ export async function createCaseStudy(
   });
 }
 
+export async function updateCaseStudy(
+  id: string,
+  payload: UpdateCaseStudyPayload,
+): Promise<CaseStudyResponse> {
+  return apiFetch<CaseStudyResponse>(`${CASE_STUDIES_PATH}/${id}`, {
+    method: 'PATCH',
+    body: payload,
+  });
+}
+
 export async function publishCaseStudy(id: string): Promise<CaseStudyResponse> {
   return apiFetch<CaseStudyResponse>(`${CASE_STUDIES_PATH}/${id}/publish`, {
     method: 'POST',
