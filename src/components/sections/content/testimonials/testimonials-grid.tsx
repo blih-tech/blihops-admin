@@ -14,6 +14,7 @@ import { TestimonialFormDialog } from '@/components/sections/content/testimonial
 import {
   createTestimonial,
   listTestimonials,
+  updateTestimonial,
   type TestimonialsResponse,
   type Testimonial,
 } from '@/lib/api/content/testimonials';
@@ -31,6 +32,8 @@ export function TestimonialsGrid() {
   });
 
   const [formOpen, setFormOpen] = useState(false);
+  const [editingTestimonial, setEditingTestimonial] =
+    useState<Testimonial | null>(null);
   const [pendingCardId, setPendingCardId] = useState<string | null>(null);
   const [draftValues, setDraftValues] = useState<TestimonialFormValues | null>(
     null,
@@ -91,13 +94,72 @@ export function TestimonialsGrid() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: TestimonialFormValues;
+    }) => updateTestimonial(id, payload),
+    onMutate: async ({ id, payload }) => {
+      const previous = takeSnapshot<TestimonialsResponse>(
+        queryClient,
+        TESTIMONIALS_KEY,
+      );
+      queryClient.setQueryData<TestimonialsResponse>(TESTIMONIALS_KEY, (old) =>
+        old
+          ? {
+              ...old,
+              items: old.items.map((item) =>
+                item.id === id ? { ...item, ...payload } : item,
+              ),
+            }
+          : old,
+      );
+      setDraftValues(payload);
+      setFormOpen(false);
+      return { previous };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: TESTIMONIALS_KEY });
+      toastSuccess('Testimonial updated');
+      setDraftValues(null);
+      setFormOpen(false);
+      setEditingTestimonial(null);
+    },
+    onError: (err, _variables, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, TESTIMONIALS_KEY, context.previous);
+      }
+      setFormOpen(true);
+      toastError('Failed to update testimonial', err.message);
+    },
+  });
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+
   function openCreate() {
     setDraftValues(null);
+    setEditingTestimonial(null);
+    setFormOpen(true);
+  }
+
+  function openEdit(testimonial: Testimonial) {
+    setDraftValues(null);
+    setEditingTestimonial(testimonial);
     setFormOpen(true);
   }
 
   function handleSave(values: TestimonialFormValues) {
-    createMutation.mutate(values);
+    if (editingTestimonial) {
+      updateMutation.mutate({
+        id: editingTestimonial.id,
+        payload: values,
+      });
+    } else {
+      createMutation.mutate(values);
+    }
   }
 
   return (
@@ -142,27 +204,37 @@ export function TestimonialsGrid() {
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.items.map((testimonial) =>
-            testimonial.isPrimary ? (
+          {data.items.map((testimonial) => {
+            const isCardPending =
+              pendingCardId === testimonial.id ||
+              (updateMutation.isPending &&
+                updateMutation.variables?.id === testimonial.id);
+            return testimonial.isPrimary ? (
               <div key={testimonial.id} className="md:col-span-2">
-                <PrimaryTestimonialCard testimonial={testimonial} />
+                <PrimaryTestimonialCard
+                  testimonial={testimonial}
+                  isPending={isCardPending}
+                  onEdit={openEdit}
+                />
               </div>
             ) : (
               <TestimonialCard
                 key={testimonial.id}
                 testimonial={testimonial}
-                isPending={pendingCardId === testimonial.id}
+                isPending={isCardPending}
+                onEdit={openEdit}
               />
-            ),
-          )}
+            );
+          })}
         </div>
       )}
 
       <TestimonialFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
+        testimonial={editingTestimonial}
         initialValues={draftValues}
-        isSaving={createMutation.isPending}
+        isSaving={isSaving}
         onSave={handleSave}
       />
     </div>

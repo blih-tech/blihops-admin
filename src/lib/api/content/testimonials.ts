@@ -25,6 +25,10 @@ export type CreateTestimonialPayload = {
   quote: string;
 };
 
+export type UpdateTestimonialPayload = Partial<CreateTestimonialPayload> & {
+  isPrimary?: true;
+};
+
 export type TestimonialResponse = {
   data: Testimonial;
 };
@@ -38,6 +42,16 @@ export async function createTestimonial(
 ): Promise<TestimonialResponse> {
   return apiFetch<TestimonialResponse>(TESTIMONIALS_PATH, {
     method: 'POST',
+    body: payload,
+  });
+}
+
+export async function updateTestimonial(
+  id: string,
+  payload: UpdateTestimonialPayload,
+): Promise<TestimonialResponse> {
+  return apiFetch<TestimonialResponse>(`${TESTIMONIALS_PATH}/${id}`, {
+    method: 'PATCH',
     body: payload,
   });
 }
