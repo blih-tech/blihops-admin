@@ -12,6 +12,7 @@ import { Dots } from '@/components/shared/Dots';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { InsightCard } from '@/components/sections/content/insights/insight-card';
+import { InsightPreviewDialog } from '@/components/sections/content/insights/insight-preview-dialog';
 import { ConfirmDeleteInsightDialog } from '@/components/sections/content/insights/confirm-delete-insight-dialog';
 import {
   deleteInsight,
@@ -39,6 +40,9 @@ export function InsightsGrid() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<StatusFilter>(undefined);
   const [page, setPage] = useState(1);
+  const [previewInsight, setPreviewInsight] = useState<InsightListItem | null>(
+    null,
+  );
   const [deletingInsight, setDeletingInsight] =
     useState<InsightListItem | null>(null);
 
@@ -98,10 +102,7 @@ export function InsightsGrid() {
   });
 
   function handlePreview(insight: InsightListItem) {
-    toastInfo(
-      'Preview is not built yet',
-      `“${insight.titles.en || insight.titles.de || insight.author}”`,
-    );
+    setPreviewInsight(insight);
   }
 
   function handleEdit(insight: InsightListItem) {
@@ -221,6 +222,16 @@ export function InsightsGrid() {
           )}
         </>
       )}
+
+      <InsightPreviewDialog
+        open={Boolean(previewInsight)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewInsight(null);
+          }
+        }}
+        insight={previewInsight}
+      />
 
       <ConfirmDeleteInsightDialog
         open={Boolean(deletingInsight)}
