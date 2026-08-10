@@ -2,10 +2,16 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MessageSquareQuoteIcon, PlusIcon } from 'lucide-react';
+import { MessageSquareQuoteIcon, PlusIcon, StarIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { TestimonialCard } from '@/components/sections/content/testimonials/testimonial-card';
@@ -39,13 +45,27 @@ export function TestimonialsGrid() {
   const [deletingTestimonial, setDeletingTestimonial] =
     useState<Testimonial | null>(null);
   const [pendingCardId, setPendingCardId] = useState<string | null>(null);
-  const [draftValues, setDraftValues] = useState<TestimonialFormValues | null>(
-    null,
-  );
+  const [draftValues, setDraftValues] = useState<
+    (TestimonialFormValues & { makePrimary: boolean }) | null
+  >(null);
+
+  const hasPrimary = data?.items.some((item) => item.isPrimary) ?? false;
 
   const createMutation = useMutation({
-    mutationFn: createTestimonial,
-    onMutate: async (values) => {
+    mutationFn: async ({
+      payload,
+      makePrimary,
+    }: {
+      payload: TestimonialFormValues;
+      makePrimary: boolean;
+    }) => {
+      const created = await createTestimonial(payload);
+      if (makePrimary) {
+        await updateTestimonial(created.data.id, { isPrimary: true });
+      }
+      return created;
+    },
+    onMutate: async ({ payload, makePrimary }) => {
       const previous = takeSnapshot<TestimonialsResponse>(
         queryClient,
         TESTIMONIALS_KEY,
@@ -53,30 +73,32 @@ export function TestimonialsGrid() {
       const tempId = `temp-${crypto.randomUUID()}`;
       const tempTestimonial: Testimonial = {
         id: tempId,
-        avatarUrl: values.avatarUrl,
-        name: values.name,
-        role: values.role,
-        company: values.company,
-        quote: values.quote,
-        isPrimary: false,
+        avatarUrl: payload.avatarUrl,
+        name: payload.name,
+        role: payload.role,
+        company: payload.company,
+        quote: payload.quote,
+        isPrimary: makePrimary,
       };
       queryClient.setQueryData<TestimonialsResponse>(TESTIMONIALS_KEY, (old) =>
         old
           ? { ...old, items: [...old.items, tempTestimonial] }
           : { items: [tempTestimonial], meta: {} },
       );
-      setDraftValues(values);
+      setDraftValues({ ...payload, makePrimary });
       setPendingCardId(tempId);
       setFormOpen(false);
-      return { previous, tempId };
+      return { previous, tempId, makePrimary };
     },
-    onSuccess: (result, _values, context) => {
+    onSuccess: (result, _variables, context) => {
       queryClient.setQueryData<TestimonialsResponse>(TESTIMONIALS_KEY, (old) =>
         old
           ? {
               ...old,
               items: old.items.map((item) =>
-                item.id === context.tempId ? result.data : item,
+                item.id === context.tempId
+                  ? { ...result.data, isPrimary: context.makePrimary }
+                  : item,
               ),
             }
           : old,
@@ -102,11 +124,17 @@ export function TestimonialsGrid() {
     mutationFn: ({
       id,
       payload,
+      makePrimary,
     }: {
       id: string;
       payload: TestimonialFormValues;
-    }) => updateTestimonial(id, payload),
-    onMutate: async ({ id, payload }) => {
+      makePrimary: boolean;
+    }) =>
+      updateTestimonial(
+        id,
+        makePrimary ? { ...payload, isPrimary: true } : payload,
+      ),
+    onMutate: async ({ id, payload, makePrimary }) => {
       const previous = takeSnapshot<TestimonialsResponse>(
         queryClient,
         TESTIMONIALS_KEY,
@@ -115,13 +143,19 @@ export function TestimonialsGrid() {
         old
           ? {
               ...old,
-              items: old.items.map((item) =>
-                item.id === id ? { ...item, ...payload } : item,
-              ),
+              items: makePrimary
+                ? old.items.map((item) =>
+                    item.id === id
+                      ? { ...item, ...payload, isPrimary: true }
+                      : { ...item, isPrimary: false },
+                  )
+                : old.items.map((item) =>
+                    item.id === id ? { ...item, ...payload } : item,
+                  ),
             }
           : old,
       );
-      setDraftValues(payload);
+      setDraftValues({ ...payload, makePrimary });
       setFormOpen(false);
       return { previous };
     },
@@ -185,14 +219,15 @@ export function TestimonialsGrid() {
     setFormOpen(true);
   }
 
-  function handleSave(values: TestimonialFormValues) {
+  function handleSave(values: TestimonialFormValues, makePrimary: boolean) {
     if (editingTestimonial) {
       updateMutation.mutate({
         id: editingTestimonial.id,
         payload: values,
+        makePrimary,
       });
     } else {
-      createMutation.mutate(values);
+      createMutation.mutate({ payload: values, makePrimary });
     }
   }
 
@@ -220,6 +255,27 @@ export function TestimonialsGrid() {
         </Button>
       </div>
 
+      {data && data.items.length > 0 && !hasPrimary && (
+        <Alert className="rounded-md">
+          <StarIcon />
+          <AlertTitle>No primary testimonial</AlertTitle>
+          <AlertDescription>
+            Choose one testimonial to feature on the managed-outsourcing
+            section. Open a testimonial and check &ldquo;Make this the primary
+            testimonial&rdquo;.
+          </AlertDescription>
+          <AlertAction>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openEdit(data.items[0])}
+            >
+              Promote testimonial
+            </Button>
+          </AlertAction>
+        </Alert>
+      )}
+
       {isPending ? (
         <TestimonialsSkeleton />
       ) : error ? (
@@ -244,30 +300,31 @@ export function TestimonialsGrid() {
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.items.map((testimonial) => {
-            const isCardPending =
-              pendingCardId === testimonial.id ||
-              (updateMutation.isPending &&
-                updateMutation.variables?.id === testimonial.id);
-            return testimonial.isPrimary ? (
-              <div key={testimonial.id} className="md:col-span-2">
+          {[...data.items]
+            .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
+            .map((testimonial) => {
+              const isCardPending =
+                pendingCardId === testimonial.id ||
+                (updateMutation.isPending &&
+                  updateMutation.variables?.id === testimonial.id);
+              return testimonial.isPrimary ? (
                 <PrimaryTestimonialCard
+                  key={testimonial.id}
                   testimonial={testimonial}
                   isPending={isCardPending}
                   onEdit={openEdit}
                   onDelete={setDeletingTestimonial}
                 />
-              </div>
-            ) : (
-              <TestimonialCard
-                key={testimonial.id}
-                testimonial={testimonial}
-                isPending={isCardPending}
-                onEdit={openEdit}
-                onDelete={setDeletingTestimonial}
-              />
-            );
-          })}
+              ) : (
+                <TestimonialCard
+                  key={testimonial.id}
+                  testimonial={testimonial}
+                  isPending={isCardPending}
+                  onEdit={openEdit}
+                  onDelete={setDeletingTestimonial}
+                />
+              );
+            })}
         </div>
       )}
 
@@ -276,6 +333,8 @@ export function TestimonialsGrid() {
         onOpenChange={setFormOpen}
         testimonial={editingTestimonial}
         initialValues={draftValues}
+        initialMakePrimary={draftValues?.makePrimary}
+        hasPrimary={hasPrimary}
         isSaving={isSaving}
         onSave={handleSave}
       />
@@ -297,7 +356,7 @@ export function TestimonialsGrid() {
 function TestimonialsSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <Skeleton className="h-48 rounded-none md:col-span-2" />
+      <Skeleton className="h-48 rounded-none" />
       {Array.from({ length: 3 }).map((_, index) => (
         <Skeleton key={index} className="h-48 rounded-none" />
       ))}
