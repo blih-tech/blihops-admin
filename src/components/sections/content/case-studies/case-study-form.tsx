@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -27,7 +28,12 @@ import { MediaField } from '@/components/sections/content/case-studies/media-fie
 import { TagInput } from '@/components/sections/content/case-studies/tag-input';
 import {
   createCaseStudy,
+  getCaseStudy,
+  updateCaseStudy,
+  type CaseStudy,
+  type CaseStudyLocaleContent,
   type CreateCaseStudyPayload,
+  type UpdateCaseStudyPayload,
 } from '@/lib/api/content/case-studies';
 import { listCategories } from '@/lib/api/content/categories';
 import { listTags } from '@/lib/api/content/tags';
@@ -52,6 +58,26 @@ const SECTION_LABELS: {
   { key: 'approach', label: 'Approach' },
   { key: 'outcome', label: 'Outcome' },
 ];
+
+const LIST_KEY = ['content', 'case-studies'] as const;
+
+function localeDefaults(locale?: Partial<CaseStudyLocaleContent>): {
+  title: string;
+  slug: string;
+  summary: string;
+  body: { challenge: string; approach: string; outcome: string };
+} {
+  return {
+    title: locale?.title ?? '',
+    slug: locale?.slug ?? '',
+    summary: locale?.summary ?? '',
+    body: {
+      challenge: locale?.body?.challenge ?? '',
+      approach: locale?.body?.approach ?? '',
+      outcome: locale?.body?.outcome ?? '',
+    },
+  };
+}
 
 function buildPayload(values: CaseStudyFormValues): CreateCaseStudyPayload {
   const content: CreateCaseStudyPayload['content'] = {};
@@ -94,7 +120,84 @@ function buildPayload(values: CaseStudyFormValues): CreateCaseStudyPayload {
   };
 }
 
-export function CaseStudyForm() {
+function buildEditPatches(
+  values: CaseStudyFormValues,
+): UpdateCaseStudyPayload[] {
+  const patches: UpdateCaseStudyPayload[] = [
+    {
+      client: values.client,
+      ...(values.categoryId !== undefined
+        ? { categoryId: values.categoryId ?? null }
+        : {}),
+      ...(values.media ? { media: values.media } : {}),
+      ...(values.tags && values.tags.length > 0 ? { tags: values.tags } : {}),
+    },
+  ];
+
+  for (const locale of ['en', 'de'] as const) {
+    const localeContent = values.content[locale];
+    if (!localeContent) continue;
+    const body = localeContent.body;
+    const hasBody = Boolean(body?.challenge || body?.approach || body?.outcome);
+    const content: Partial<CaseStudyLocaleContent> = {};
+    if (localeContent.title) content.title = localeContent.title;
+    if (localeContent.slug) content.slug = localeContent.slug;
+    if (localeContent.summary) content.summary = localeContent.summary;
+    if (hasBody) {
+      content.body = {
+        challenge: body?.challenge ?? '',
+        approach: body?.approach ?? '',
+        outcome: body?.outcome ?? '',
+      };
+    }
+    if (Object.keys(content).length > 0) {
+      patches.push({ locale, content });
+    }
+  }
+
+  return patches;
+}
+
+export function CaseStudyForm({ caseStudyId }: { caseStudyId?: string }) {
+  const isEdit = Boolean(caseStudyId);
+  const detailQuery = useQuery({
+    queryKey: ['content', 'case-studies', 'detail', caseStudyId],
+    queryFn: () => getCaseStudy(caseStudyId as string),
+    enabled: isEdit,
+  });
+
+  if (isEdit && detailQuery.isPending) {
+    return <EditSkeleton />;
+  }
+
+  if (isEdit && detailQuery.isError) {
+    return (
+      <div className="flex flex-1 flex-col gap-6">
+        <ErrorState
+          title="Failed to load case study"
+          message={detailQuery.error.message}
+          onRetry={() => {
+            void detailQuery.refetch();
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <CaseStudyFormFields
+      key={caseStudyId ?? 'new'}
+      initialData={detailQuery.data?.data ?? null}
+    />
+  );
+}
+
+function CaseStudyFormFields({
+  initialData,
+}: {
+  initialData: CaseStudy | null;
+}) {
+  const isEdit = initialData !== null;
   const router = useRouter();
   const queryClient = useQueryClient();
   const [locale, setLocale] = useState<Locale>('en');
@@ -112,23 +215,16 @@ export function CaseStudyForm() {
   const form = useForm<CaseStudyFormValues>({
     resolver: zodResolver(caseStudyFormSchema),
     defaultValues: {
-      client: '',
-      categoryId: null,
-      tags: [],
-      media: undefined,
+      client: initialData?.client ?? '',
+      categoryId: initialData?.category?.id ?? null,
+      tags: initialData?.tags.map((tag) => tag.id) ?? [],
+      media:
+        initialData?.media && initialData.media.url
+          ? initialData.media
+          : undefined,
       content: {
-        en: {
-          title: '',
-          slug: '',
-          summary: '',
-          body: { challenge: '', approach: '', outcome: '' },
-        },
-        de: {
-          title: '',
-          slug: '',
-          summary: '',
-          body: { challenge: '', approach: '', outcome: '' },
-        },
+        en: localeDefaults(initialData?.content?.en),
+        de: localeDefaults(initialData?.content?.de),
       },
     },
   });
@@ -137,13 +233,13 @@ export function CaseStudyForm() {
   const categoryId = useWatch({ control: form.control, name: 'categoryId' });
   const tags = useWatch({ control: form.control, name: 'tags' });
   const media = useWatch({ control: form.control, name: 'media' });
+  const editId = initialData?.id ?? null;
 
   const createMutation = useMutation({
-    mutationFn: createCaseStudy,
+    mutationFn: (values: CaseStudyFormValues) =>
+      createCaseStudy(buildPayload(values)),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['content', 'case-studies'],
-      });
+      void queryClient.invalidateQueries({ queryKey: LIST_KEY });
       toastSuccess('Draft created');
       router.push('/content/case-studies');
     },
@@ -152,11 +248,35 @@ export function CaseStudyForm() {
     },
   });
 
-  const canSubmit =
-    Boolean(client.trim()) && !isUploading && !createMutation.isPending;
+  const editMutation = useMutation({
+    mutationFn: async (values: CaseStudyFormValues) => {
+      if (editId === null) {
+        throw new Error('Case study not found');
+      }
+      const patches = buildEditPatches(values);
+      for (const patch of patches) {
+        await updateCaseStudy(editId, patch);
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: LIST_KEY });
+      toastSuccess('Case study updated');
+      router.push('/content/case-studies');
+    },
+    onError: (err) => {
+      toastError('Failed to update case study', err.message);
+    },
+  });
+
+  const isSaving = createMutation.isPending || editMutation.isPending;
+  const canSubmit = Boolean(client.trim()) && !isUploading && !isSaving;
 
   function handleSubmit(values: CaseStudyFormValues) {
-    createMutation.mutate(buildPayload(values));
+    if (isEdit) {
+      editMutation.mutate(values);
+    } else {
+      createMutation.mutate(values);
+    }
   }
 
   if (categoriesQuery.isError || tagsQuery.isError) {
@@ -174,7 +294,7 @@ export function CaseStudyForm() {
     );
   }
 
-  const isBusy = createMutation.isPending || isUploading;
+  const isBusy = isSaving || isUploading;
 
   return (
     <div className="flex flex-1 flex-col gap-6">
@@ -188,11 +308,10 @@ export function CaseStudyForm() {
             Back to case studies
           </Link>
           <h1 className="mt-2 font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-            Add Case Study
+            {isEdit ? 'Edit Case Study' : 'Add Case Study'}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Create a draft. Both English and German are required before
-            publishing.
+            Both English and German are required before publishing.
           </p>
         </div>
         <Button
@@ -314,7 +433,13 @@ export function CaseStudyForm() {
             Cancel
           </Button>
           <Button type="submit" disabled={!canSubmit}>
-            {createMutation.isPending ? <Dots dots={3} /> : 'Save draft'}
+            {isSaving ? (
+              <Dots dots={3} />
+            ) : isEdit ? (
+              'Save changes'
+            ) : (
+              'Save draft'
+            )}
           </Button>
         </div>
       </form>
@@ -404,6 +529,17 @@ function LocaleFields({
           />
         </div>
       ))}
+    </div>
+  );
+}
+
+function EditSkeleton() {
+  return (
+    <div className="flex flex-1 flex-col gap-6">
+      <Skeleton className="h-8 w-56 rounded-md" />
+      <Skeleton className="mt-2 h-4 w-96 max-w-full rounded-md" />
+      <Skeleton className="h-40 w-full rounded-md" />
+      <Skeleton className="h-96 w-full rounded-md" />
     </div>
   );
 }
