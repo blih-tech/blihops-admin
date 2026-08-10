@@ -31,6 +31,25 @@ export type FaqsResponse = {
   meta: FaqsMeta;
 };
 
+export type CreateFaqPayload = {
+  en: FaqLocaleContent;
+  de: FaqLocaleContent;
+  displayOrder: number;
+};
+
+export type FaqResponse = {
+  data: Faq;
+};
+
 export async function listFaqs(): Promise<FaqsResponse> {
   return apiFetch<FaqsResponse>(FAQS_PATH);
+}
+
+export async function createFaq(
+  payload: CreateFaqPayload,
+): Promise<FaqResponse> {
+  return apiFetch<FaqResponse>(FAQS_PATH, {
+    method: 'POST',
+    body: payload,
+  });
 }
