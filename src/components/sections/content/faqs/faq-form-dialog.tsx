@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dots } from '@/components/shared/Dots';
 import { faqFormSchema, type FaqFormValues } from '@/lib/validators/faq';
+import type { Faq } from '@/lib/api/content/faqs';
 
 const LOCALE_TABS = [
   { value: 'en', label: 'EN' },
@@ -30,6 +31,7 @@ type Locale = (typeof LOCALE_TABS)[number]['value'];
 type FaqFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  faq?: Faq | null;
   initialValues?: FaqFormValues | null;
   nextDisplayOrder: number;
   isSaving: boolean;
@@ -39,23 +41,30 @@ type FaqFormDialogProps = {
 export function FaqFormDialog({
   open,
   onOpenChange,
+  faq,
   initialValues,
   nextDisplayOrder,
   isSaving,
   onSave,
 }: FaqFormDialogProps) {
+  const isEdit = Boolean(faq);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto rounded-md sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Add question</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit question' : 'Add question'}</DialogTitle>
           <DialogDescription>
-            Create a question for the Pilot page. English and German content are
-            both required.
+            {isEdit
+              ? 'Update the question and answer. Changes appear on the Pilot page only while the question is active.'
+              : 'Create a question for the Pilot page. English and German content are both required.'}
           </DialogDescription>
         </DialogHeader>
 
         <FaqFormContent
+          key={faq?.id ?? 'new'}
+          isEdit={isEdit}
+          faq={faq}
           initialValues={initialValues}
           nextDisplayOrder={nextDisplayOrder}
           isSaving={isSaving}
@@ -67,13 +76,39 @@ export function FaqFormDialog({
   );
 }
 
+function emptyValues(displayOrder: number): FaqFormValues {
+  return {
+    en: { question: '', answer: '' },
+    de: { question: '', answer: '' },
+    displayOrder,
+  };
+}
+
+function faqToValues(faq: Faq): FaqFormValues {
+  return {
+    en: {
+      question: faq.content.en?.question ?? '',
+      answer: faq.content.en?.answer ?? '',
+    },
+    de: {
+      question: faq.content.de?.question ?? '',
+      answer: faq.content.de?.answer ?? '',
+    },
+    displayOrder: faq.displayOrder,
+  };
+}
+
 function FaqFormContent({
+  isEdit,
+  faq,
   initialValues,
   nextDisplayOrder,
   isSaving,
   onOpenChange,
   onSave,
 }: {
+  isEdit: boolean;
+  faq?: Faq | null;
   initialValues?: FaqFormValues | null;
   nextDisplayOrder: number;
   isSaving: boolean;
@@ -85,11 +120,8 @@ function FaqFormContent({
   const form = useForm<FaqFormValues>({
     resolver: zodResolver(faqFormSchema),
     mode: 'onTouched',
-    defaultValues: initialValues ?? {
-      en: { question: '', answer: '' },
-      de: { question: '', answer: '' },
-      displayOrder: nextDisplayOrder,
-    },
+    defaultValues:
+      initialValues ?? (faq ? faqToValues(faq) : emptyValues(nextDisplayOrder)),
   });
 
   const enQuestion = useWatch({ control: form.control, name: 'en.question' });
@@ -235,7 +267,13 @@ function FaqFormContent({
           Cancel
         </Button>
         <Button type="submit" disabled={!canSubmit}>
-          {isSaving ? <Dots dots={3} /> : 'Create question'}
+          {isSaving ? (
+            <Dots dots={3} />
+          ) : isEdit ? (
+            'Save changes'
+          ) : (
+            'Create question'
+          )}
         </Button>
       </DialogFooter>
     </form>
