@@ -58,7 +58,7 @@ export type InsightListItem = {
   category: InsightCategory;
   media: InsightMedia;
   tags: InsightTag[];
-  status?: 'DRAFT' | 'PUBLISHED';
+  status: 'DRAFT' | 'PUBLISHED';
   createdAt: string;
 };
 
