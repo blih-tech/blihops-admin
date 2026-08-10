@@ -234,6 +234,9 @@ function CaseStudyFormFields({
   const tags = useWatch({ control: form.control, name: 'tags' });
   const media = useWatch({ control: form.control, name: 'media' });
   const editId = initialData?.id ?? null;
+  const selectedCategory = categoriesQuery.data?.items.find(
+    (category) => category.id === categoryId,
+  );
 
   const createMutation = useMutation({
     mutationFn: (values: CaseStudyFormValues) =>
@@ -355,7 +358,9 @@ function CaseStudyFormFields({
                 }
               >
                 <SelectTrigger className="w-full rounded-md">
-                  <SelectValue placeholder="Select a category" />
+                  <SelectValue placeholder="Select a category">
+                    {selectedCategory ? selectedCategory.name : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-md">
                   {categoriesQuery.data?.items.map((category) => (

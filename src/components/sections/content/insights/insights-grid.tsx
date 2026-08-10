@@ -22,7 +22,7 @@ import {
   type InsightsResponse,
 } from '@/lib/api/content/insights';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
-import { toastError, toastInfo, toastSuccess } from '@/lib/toast';
+import { toastError, toastSuccess } from '@/lib/toast';
 
 const PAGE_SIZE = 12;
 const LIST_KEY = ['content', 'insights'] as const;

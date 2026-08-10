@@ -55,7 +55,7 @@ export type CaseStudyListItem = {
   category: CaseStudyCategory;
   media: CaseStudyMedia;
   tags: CaseStudyTag[];
-  status?: 'DRAFT' | 'PUBLISHED';
+  status: 'DRAFT' | 'PUBLISHED';
   createdAt: string;
 };
 

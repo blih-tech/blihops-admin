@@ -57,12 +57,24 @@ export function InsightCard({
   return (
     <article
       aria-busy={isPending}
+      role="button"
+      tabIndex={0}
+      onClick={() => onPreview(insight)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onPreview(insight);
+        }
+      }}
       className={cn(
-        'group relative flex min-h-full min-w-0 flex-col border border-border bg-background p-4 transition-[opacity,background-color] duration-300 hover:bg-muted/50 sm:p-5',
+        'group relative flex min-h-full min-w-0 cursor-pointer flex-col border border-border bg-background p-4 transition-[opacity,background-color] duration-300 hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/30 sm:p-5',
         isPending && 'opacity-60',
       )}
     >
-      <div className="absolute top-3 right-3 z-10 opacity-0 transition-opacity group-focus-within:opacity-100 md:group-hover:opacity-100">
+      <div
+        onClick={(event) => event.stopPropagation()}
+        className="absolute top-3 right-3 z-10 opacity-0 transition-opacity group-focus-within:opacity-100 md:group-hover:opacity-100"
+      >
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
