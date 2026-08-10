@@ -5,6 +5,7 @@ import {
   EllipsisVerticalIcon,
   EyeIcon,
   PencilIcon,
+  PlayIcon,
   SendIcon,
   Trash2Icon,
 } from 'lucide-react';
@@ -119,6 +120,10 @@ export function CaseStudyCard({
             alt={caseStudy.media.alt ?? ''}
             className="h-full w-full object-cover"
           />
+        ) : hasMedia && caseStudy.media.type === 'video' ? (
+          <div className="flex size-full items-center justify-center bg-primary">
+            <PlayIcon className="size-8 fill-current text-primary-foreground" />
+          </div>
         ) : (
           <div className="flex size-full items-center justify-center">
             <div className="flex size-11 items-center justify-center rounded-full bg-foreground/90 text-background shadow-md">

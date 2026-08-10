@@ -64,6 +64,14 @@ export function CaseStudyPreviewDialog({
                   alt={detail.media.alt ?? ''}
                   className="size-full object-cover"
                 />
+              ) : detail.media.url && detail.media.type === 'video' ? (
+                <video
+                  src={detail.media.url}
+                  controls
+                  preload="metadata"
+                  aria-label={detail.media.alt ?? ''}
+                  className="size-full object-cover"
+                />
               ) : (
                 <div className="flex size-full items-center justify-center">
                   <div className="flex size-14 items-center justify-center rounded-full bg-foreground/90 text-background shadow-md">
