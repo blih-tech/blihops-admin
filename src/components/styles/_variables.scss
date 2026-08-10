@@ -1,0 +1,223 @@
+:root {
+  /* ---------- Base ---------- */
+  --white: oklch(1 0 0);
+  --black: oklch(0 0 0);
+  --tt-white: oklch(1 0 0);
+  --tt-black: oklch(0 0 0);
+  --tt-bg-color: var(--background);
+  --tt-theme-text: var(--foreground);
+  --tt-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --tt-scrollbar-color: var(--border);
+  --tt-kbd: var(--border);
+
+  /* ---------- Radii ---------- */
+  --tt-radius-xs: 0.25rem;
+  --tt-radius-sm: 0.25rem;
+  --tt-radius-md: 0.375rem;
+  --tt-radius-lg: 0.5rem;
+  --tt-radius-xl: 0.75rem;
+
+  /* ---------- Motion ---------- */
+  --tt-transition-duration-default: 150ms;
+  --tt-transition-easing-default: cubic-bezier(0.22, 1, 0.36, 1);
+  --tt-shadow-elevated-md: 0 4px 16px rgb(0 0 0 / 0.12);
+
+  /* ---------- Neutral scales ---------- */
+  --tt-gray-light-50: oklch(0.9846 0.0017 247.8389);
+  --tt-gray-light-100: oklch(0.9672 0.003 247.896);
+  --tt-gray-light-200: oklch(0.9298 0.013 255.508);
+  --tt-gray-light-300: oklch(0.8698 0.016 252.42);
+  --tt-gray-light-600: oklch(0.551 0.0234 264.3637);
+  --tt-gray-light-900: oklch(0.3211 0 0);
+
+  --tt-gray-light-a-50: oklch(0.3211 0 0 / 0.04);
+  --tt-gray-light-a-100: oklch(0.3211 0 0 / 0.06);
+  --tt-gray-light-a-200: oklch(0.3211 0 0 / 0.1);
+  --tt-gray-light-a-300: oklch(0.3211 0 0 / 0.16);
+  --tt-gray-light-a-400: oklch(0.3211 0 0 / 0.24);
+  --tt-gray-light-a-500: oklch(0.3211 0 0 / 0.32);
+  --tt-gray-light-a-600: oklch(0.3211 0 0 / 0.44);
+  --tt-gray-light-a-700: oklch(0.3211 0 0 / 0.6);
+  --tt-gray-light-a-800: oklch(0.3211 0 0 / 0.75);
+  --tt-gray-light-a-900: oklch(0.3211 0 0 / 0.9);
+
+  --tt-gray-dark-50: oklch(0.9219 0 0);
+  --tt-gray-dark-100: oklch(0.85 0 0);
+  --tt-gray-dark-200: oklch(0.75 0 0);
+  --tt-gray-dark-300: oklch(0.62 0 0);
+  --tt-gray-dark-900: oklch(0.2046 0 0);
+
+  --tt-gray-dark-a-50: oklch(1 0 0 / 0.04);
+  --tt-gray-dark-a-100: oklch(1 0 0 / 0.06);
+  --tt-gray-dark-a-200: oklch(1 0 0 / 0.1);
+  --tt-gray-dark-a-300: oklch(1 0 0 / 0.16);
+  --tt-gray-dark-a-400: oklch(1 0 0 / 0.24);
+  --tt-gray-dark-a-500: oklch(1 0 0 / 0.32);
+  --tt-gray-dark-a-600: oklch(1 0 0 / 0.44);
+  --tt-gray-dark-a-700: oklch(1 0 0 / 0.6);
+  --tt-gray-dark-a-800: oklch(1 0 0 / 0.75);
+  --tt-gray-dark-a-900: oklch(1 0 0 / 0.9);
+
+  /* ---------- Brand ---------- */
+  --tt-brand-color-50: oklch(0.96 0.03 259.8);
+  --tt-brand-color-100: oklch(0.94 0.05 259.8);
+  --tt-brand-color-200: oklch(0.89 0.08 259.8);
+  --tt-brand-color-300: oklch(0.83 0.12 259.8);
+  --tt-brand-color-400: oklch(0.75 0.16 259.8);
+  --tt-brand-color-500: oklch(0.6231 0.188 259.8145);
+  --tt-brand-color-600: oklch(0.55 0.18 259.8);
+  --tt-brand-color-700: oklch(0.48 0.17 259.8);
+  --tt-brand-color-800: oklch(0.41 0.15 259.8);
+  --tt-brand-color-900: oklch(0.34 0.12 259.8);
+
+  /* ---------- Highlight / alert palettes ---------- */
+  --tt-color-green-base: oklch(0.6 0.15 150);
+  --tt-color-green-inc-2: oklch(0.78 0.12 150);
+  --tt-color-green-inc-3: oklch(0.86 0.09 150);
+  --tt-color-green-inc-4: oklch(0.94 0.05 150);
+  --tt-color-green-dec-2: oklch(0.48 0.14 150);
+  --tt-color-green-dec-3: oklch(0.38 0.12 150);
+  --tt-color-green-dec-4: oklch(0.28 0.09 150);
+
+  --tt-color-yellow-base: oklch(0.85 0.15 90);
+  --tt-color-yellow-inc-1: oklch(0.9 0.12 90);
+  --tt-color-yellow-inc-2: oklch(0.94 0.09 90);
+  --tt-color-yellow-inc-3: oklch(0.97 0.05 90);
+  --tt-color-yellow-inc-4: oklch(0.99 0.02 90);
+  --tt-color-yellow-dec-1: oklch(0.78 0.16 90);
+  --tt-color-yellow-dec-2: oklch(0.7 0.17 90);
+  --tt-color-yellow-dec-3: oklch(0.6 0.16 90);
+  --tt-color-yellow-dec-4: oklch(0.5 0.14 90);
+
+  --tt-color-red-base: oklch(0.6 0.2 25);
+  --tt-color-red-inc-2: oklch(0.78 0.16 25);
+  --tt-color-red-inc-3: oklch(0.86 0.12 25);
+  --tt-color-red-inc-4: oklch(0.94 0.06 25);
+  --tt-color-red-dec-2: oklch(0.48 0.19 25);
+  --tt-color-red-dec-3: oklch(0.38 0.17 25);
+  --tt-color-red-dec-4: oklch(0.28 0.13 25);
+
+  /* ---------- Toolbar ---------- */
+  --tt-toolbar-height: 2.75rem;
+  --tt-toolbar-padding: 0.125rem;
+  --tt-toolbar-border-width: 1px;
+  --tt-toolbar-bg-color: var(--card);
+  --tt-toolbar-border-color: var(--border);
+
+  /* ---------- Button ---------- */
+  --tt-button-default-bg-color: transparent;
+  --tt-button-default-text-color: var(--foreground);
+  --tt-button-default-icon-color: var(--muted-foreground);
+  --tt-button-default-icon-sub-color: var(--muted-foreground);
+  --tt-button-default-dropdown-arrows-color: var(--muted-foreground);
+
+  --tt-button-hover-bg-color: var(--muted);
+  --tt-button-hover-text-color: var(--foreground);
+  --tt-button-hover-icon-color: var(--foreground);
+  --tt-button-hover-icon-sub-color: var(--foreground);
+  --tt-button-hover-dropdown-arrows-color: var(--foreground);
+
+  --tt-button-active-bg-color: var(--muted);
+  --tt-button-active-text-color: var(--foreground);
+  --tt-button-active-icon-color: var(--foreground);
+  --tt-button-active-icon-sub-color: var(--foreground);
+  --tt-button-active-dropdown-arrows-color: var(--foreground);
+  --tt-button-active-hover-bg-color: var(--muted);
+
+  --tt-button-active-bg-color-emphasized: var(--primary);
+  --tt-button-active-text-color-emphasized: var(--primary-foreground);
+  --tt-button-active-icon-color-emphasized: var(--primary-foreground);
+  --tt-button-active-icon-sub-color-emphasized: var(--primary-foreground);
+  --tt-button-active-dropdown-arrows-color-emphasized: var(
+    --primary-foreground
+  );
+  --tt-button-active-hover-bg-color-emphasized: var(--primary);
+
+  --tt-button-active-bg-color-subdued: var(--muted);
+  --tt-button-active-text-color-subdued: var(--foreground);
+  --tt-button-active-icon-color-subdued: var(--muted-foreground);
+  --tt-button-active-icon-sub-color-subdued: var(--muted-foreground);
+  --tt-button-active-dropdown-arrows-color-subdued: var(--muted-foreground);
+  --tt-button-active-hover-bg-color-subdued: var(--muted);
+
+  --tt-button-disabled-bg-color: transparent;
+  --tt-button-disabled-text-color: var(--muted-foreground);
+  --tt-button-disabled-icon-color: var(--muted-foreground);
+
+  --tt-button-check-bg-color: transparent;
+  --tt-button-check-border-color: var(--border);
+  --tt-button-check-hover-bg-color: transparent;
+  --tt-button-check-hover-border-color: var(--muted-foreground);
+  --tt-button-check-checked-bg-color: var(--primary);
+  --tt-button-check-checked-border-color: var(--primary);
+  --tt-button-check-checked-icon-color: var(--primary-foreground);
+  --tt-button-check-checked-text-color: var(--foreground);
+  --tt-button-check-focus-ring-color: var(--ring);
+
+  /* ---------- Badge ---------- */
+  --tt-badge-bg-color: var(--muted);
+  --tt-badge-text-color: var(--foreground);
+  --tt-badge-icon-color: var(--muted-foreground);
+  --tt-badge-border-color: var(--border);
+  --tt-badge-bg-color-emphasized: var(--primary);
+  --tt-badge-text-color-emphasized: var(--primary-foreground);
+  --tt-badge-icon-color-emphasized: var(--primary-foreground);
+  --tt-badge-border-color-emphasized: var(--primary);
+  --tt-badge-bg-color-subdued: var(--muted);
+  --tt-badge-text-color-subdued: var(--muted-foreground);
+  --tt-badge-icon-color-subdued: var(--muted-foreground);
+  --tt-badge-border-color-subdued: var(--border);
+
+  /* ---------- Dropdown menu ---------- */
+  --tt-dropdown-menu-bg-color: var(--popover);
+  --tt-dropdown-menu-text-color: var(--popover-foreground);
+  --tt-dropdown-menu-label-color: var(--muted-foreground);
+
+  /* ---------- Inline code / code block ---------- */
+  --tt-inline-code-bg-color: var(--muted);
+  --tt-inline-code-border-color: var(--border);
+  --tt-inline-code-text-color: var(--foreground);
+  --tt-codeblock-bg: var(--muted);
+  --tt-codeblock-border: var(--border);
+  --tt-codeblock-text: var(--foreground);
+
+  /* ---------- Checklist ---------- */
+  --tt-checklist-bg-color: var(--muted);
+  --tt-checklist-border-color: var(--border);
+  --tt-checklist-bg-active-color: var(--primary);
+  --tt-checklist-border-active-color: var(--primary);
+  --tt-checklist-check-icon-color: var(--primary-foreground);
+
+  /* ---------- Inputs ---------- */
+  --tt-input-border: var(--border);
+  --tt-input-border-focus: var(--ring);
+  --tt-input-placeholder: var(--muted-foreground);
+  --tt-textarea-border: var(--border);
+  --tt-textarea-border-focus: var(--ring);
+  --tt-textarea-placeholder: var(--muted-foreground);
+  --tt-ig-border: var(--border);
+  --tt-ig-border-focus: var(--ring);
+  --tt-ig-addon-color: var(--muted-foreground);
+
+  /* ---------- Editor chrome ---------- */
+  --tt-link-border-color: var(--primary);
+  --tt-selection-color: color-mix(in oklch, var(--primary) 20%, transparent);
+  --tt-cursor-color: var(--primary);
+  --tt-indent-level: 1;
+  --tt-indent-unit: 2rem;
+
+  /* ---------- Tooltip ---------- */
+  --tt-tooltip-bg: var(--foreground);
+  --tt-tooltip-text: var(--background);
+
+  /* ---------- Collaboration (unused, reserved) ---------- */
+  --tt-collaboration-carets-label: var(--muted-foreground);
+}
+
+.dark {
+  /* Token-referenced variables above adapt automatically; only raw
+     neutral references need explicit dark values. */
+  --white: oklch(1 0 0);
+  --black: oklch(0 0 0);
+  --tt-scrollbar-color: var(--border);
+}
