@@ -37,6 +37,10 @@ export type CreateFaqPayload = {
   displayOrder: number;
 };
 
+export type UpdateFaqPayload = Partial<CreateFaqPayload> & {
+  isActive?: boolean;
+};
+
 export type FaqResponse = {
   data: Faq;
 };
@@ -51,5 +55,22 @@ export async function createFaq(
   return apiFetch<FaqResponse>(FAQS_PATH, {
     method: 'POST',
     body: payload,
+  });
+}
+
+export async function updateFaq(
+  id: string,
+  payload: UpdateFaqPayload,
+): Promise<FaqResponse> {
+  return apiFetch<FaqResponse>(`${FAQS_PATH}/${id}`, {
+    method: 'PATCH',
+    body: payload,
+  });
+}
+
+export async function deleteFaq(id: string): Promise<void> {
+  return apiFetch<void>(`${FAQS_PATH}/${id}`, {
+    method: 'DELETE',
+    responseType: 'none',
   });
 }

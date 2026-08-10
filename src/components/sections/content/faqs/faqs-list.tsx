@@ -11,10 +11,14 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { FaqRow } from '@/components/sections/content/faqs/faq-row';
 import { FaqFormDialog } from '@/components/sections/content/faqs/faq-form-dialog';
+import { ConfirmDeleteFaqDialog } from '@/components/sections/content/faqs/confirm-delete-faq-dialog';
 import {
   createFaq,
+  deleteFaq,
   listFaqs,
+  updateFaq,
   type Faq,
+  type FaqLocaleContent,
   type FaqsResponse,
 } from '@/lib/api/content/faqs';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
@@ -36,6 +40,8 @@ export function FaqsList() {
   const [isActive, setIsActive] = useState<ActiveFilter>(undefined);
   const [formOpen, setFormOpen] = useState(false);
   const [draftValues, setDraftValues] = useState<FaqFormValues | null>(null);
+  const [editingFaq, setEditingFaq] = useState<Faq | null>(null);
+  const [deletingFaq, setDeletingFaq] = useState<Faq | null>(null);
   const [pendingRowId, setPendingRowId] = useState<string | null>(null);
 
   const { data, error, isPending, refetch } = useQuery({
@@ -45,17 +51,7 @@ export function FaqsList() {
 
   const createMutation = useMutation({
     mutationFn: (values: FaqFormValues) =>
-      createFaq({
-        en: {
-          question: values.en.question.trim(),
-          answer: values.en.answer.trim(),
-        },
-        de: {
-          question: values.de.question.trim(),
-          answer: values.de.answer.trim(),
-        },
-        displayOrder: values.displayOrder,
-      }),
+      createFaq(buildLocalePayload(values)),
     onMutate: async (values) => {
       const previous = takeSnapshot<FaqsResponse>(queryClient, FAQS_KEY);
       const tempId = `temp-${crypto.randomUUID()}`;
@@ -63,16 +59,7 @@ export function FaqsList() {
         id: tempId,
         isActive: false,
         displayOrder: values.displayOrder,
-        content: {
-          en: {
-            question: values.en.question.trim(),
-            answer: values.en.answer.trim(),
-          },
-          de: {
-            question: values.de.question.trim(),
-            answer: values.de.answer.trim(),
-          },
-        },
+        content: buildLocaleContent(values),
       };
       queryClient.setQueryData<FaqsResponse>(FAQS_KEY, (old) =>
         old
@@ -115,6 +102,146 @@ export function FaqsList() {
     },
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: FaqFormValues }) =>
+      updateFaq(id, buildLocalePayload(values)),
+    onMutate: async ({ id, values }) => {
+      const previous = takeSnapshot<FaqsResponse>(queryClient, FAQS_KEY);
+      queryClient.setQueryData<FaqsResponse>(FAQS_KEY, (old) =>
+        old
+          ? {
+              ...old,
+              items: old.items.map((item) =>
+                item.id === id
+                  ? {
+                      ...item,
+                      displayOrder: values.displayOrder,
+                      content: buildLocaleContent(values),
+                    }
+                  : item,
+              ),
+            }
+          : old,
+      );
+      setDraftValues(values);
+      setFormOpen(false);
+      return { previous };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: FAQS_KEY });
+      toastSuccess('Question updated');
+      setDraftValues(null);
+      setFormOpen(false);
+      setEditingFaq(null);
+    },
+    onError: (err, _variables, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, FAQS_KEY, context.previous);
+      }
+      setFormOpen(true);
+      toastError('Failed to update question', err.message);
+    },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      updateFaq(id, { isActive }),
+    onMutate: async ({ id, isActive }) => {
+      const previous = takeSnapshot<FaqsResponse>(queryClient, FAQS_KEY);
+      queryClient.setQueryData<FaqsResponse>(FAQS_KEY, (old) =>
+        old
+          ? {
+              ...old,
+              items: old.items.map((item) =>
+                item.id === id ? { ...item, isActive } : item,
+              ),
+            }
+          : old,
+      );
+      return { previous };
+    },
+    onSuccess: (result, variables) => {
+      void queryClient.invalidateQueries({ queryKey: FAQS_KEY });
+      toastSuccess(
+        variables.isActive ? 'Question activated' : 'Question deactivated',
+      );
+    },
+    onError: (err, _variables, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, FAQS_KEY, context.previous);
+      }
+      toastError('Failed to update question status', err.message);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteFaq,
+    onMutate: async (id) => {
+      const previous = takeSnapshot<FaqsResponse>(queryClient, FAQS_KEY);
+      queryClient.setQueryData<FaqsResponse>(FAQS_KEY, (old) =>
+        old
+          ? { ...old, items: old.items.filter((item) => item.id !== id) }
+          : old,
+      );
+      setDeletingFaq(null);
+      return { previous };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: FAQS_KEY });
+      toastSuccess('Question deleted');
+    },
+    onError: (err, _id, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, FAQS_KEY, context.previous);
+      }
+      toastError('Failed to delete question', err.message);
+    },
+  });
+
+  const moveMutation = useMutation({
+    mutationFn: (swap: {
+      first: { id: string; displayOrder: number };
+      second: { id: string; displayOrder: number };
+    }) =>
+      Promise.all([
+        updateFaq(swap.first.id, { displayOrder: swap.first.displayOrder }),
+        updateFaq(swap.second.id, { displayOrder: swap.second.displayOrder }),
+      ]),
+    onMutate: async (swap) => {
+      const previous = takeSnapshot<FaqsResponse>(queryClient, FAQS_KEY);
+      queryClient.setQueryData<FaqsResponse>(FAQS_KEY, (old) =>
+        old
+          ? {
+              ...old,
+              items: old.items
+                .map((item) =>
+                  item.id === swap.first.id
+                    ? { ...item, displayOrder: swap.first.displayOrder }
+                    : item.id === swap.second.id
+                      ? { ...item, displayOrder: swap.second.displayOrder }
+                      : item,
+                )
+                .sort(
+                  (a, b) =>
+                    a.displayOrder - b.displayOrder || a.id.localeCompare(b.id),
+                ),
+            }
+          : old,
+      );
+      return { previous };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: FAQS_KEY });
+      toastSuccess('Order updated');
+    },
+    onError: (err, _swap, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, FAQS_KEY, context.previous);
+      }
+      toastError('Failed to update order', err.message);
+    },
+  });
+
   const items =
     data?.items.filter((faq) =>
       isActive === undefined ? true : faq.isActive === isActive,
@@ -126,7 +253,28 @@ export function FaqsList() {
 
   function openCreate() {
     setDraftValues(null);
+    setEditingFaq(null);
     setFormOpen(true);
+  }
+
+  function openEdit(faq: Faq) {
+    setDraftValues(null);
+    setEditingFaq(faq);
+    setFormOpen(true);
+  }
+
+  function handleSave(values: FaqFormValues) {
+    if (editingFaq) {
+      editMutation.mutate({ id: editingFaq.id, values });
+    } else {
+      createMutation.mutate(values);
+    }
+  }
+
+  function handleConfirmDelete() {
+    if (deletingFaq) {
+      deleteMutation.mutate(deletingFaq.id);
+    }
   }
 
   return (
@@ -208,27 +356,79 @@ export function FaqsList() {
         />
       ) : (
         <div className="divide-y divide-border border border-border bg-card">
-          {items.map((faq, index) => (
-            <FaqRow
-              key={faq.id}
-              faq={faq}
-              index={index}
-              isPending={pendingRowId === faq.id}
-            />
-          ))}
+          {items.map((faq, index) => {
+            const isRowPending =
+              pendingRowId === faq.id ||
+              (editMutation.isPending &&
+                editMutation.variables?.id === faq.id) ||
+              (toggleMutation.isPending &&
+                toggleMutation.variables?.id === faq.id);
+            return (
+              <FaqRow
+                key={faq.id}
+                faq={faq}
+                index={index}
+                isPending={isRowPending}
+                onEdit={openEdit}
+                onToggleActive={(row) =>
+                  toggleMutation.mutate({
+                    id: row.id,
+                    isActive: !row.isActive,
+                  })
+                }
+                onDelete={setDeletingFaq}
+              />
+            );
+          })}
         </div>
       )}
 
       <FaqFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
+        faq={editingFaq}
         initialValues={draftValues}
         nextDisplayOrder={nextDisplayOrder}
-        isSaving={createMutation.isPending}
-        onSave={(values) => createMutation.mutate(values)}
+        isSaving={createMutation.isPending || editMutation.isPending}
+        onSave={handleSave}
+      />
+
+      <ConfirmDeleteFaqDialog
+        open={Boolean(deletingFaq)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingFaq(null);
+          }
+        }}
+        faq={deletingFaq}
+        isDeleting={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );
+}
+
+function buildLocaleContent(values: FaqFormValues): {
+  en: FaqLocaleContent;
+  de: FaqLocaleContent;
+} {
+  return {
+    en: {
+      question: values.en.question.trim(),
+      answer: values.en.answer.trim(),
+    },
+    de: {
+      question: values.de.question.trim(),
+      answer: values.de.answer.trim(),
+    },
+  };
+}
+
+function buildLocalePayload(values: FaqFormValues) {
+  return {
+    ...buildLocaleContent(values),
+    displayOrder: values.displayOrder,
+  };
 }
 
 function FaqsSkeleton() {
