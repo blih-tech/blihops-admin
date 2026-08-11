@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { XIcon } from 'lucide-react';
+import { TagIcon, XIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -46,11 +46,13 @@ export function TagRow({
     <div
       aria-busy={isPending}
       onDoubleClick={startEdit}
+      title="Double-click to rename"
       className={cn(
-        'group inline-flex items-center gap-2 rounded-md border border-border bg-card py-1.5 pr-1.5 pl-3 transition-[opacity,background-color] hover:bg-muted/50',
+        'group inline-flex items-center gap-2 rounded-md border border-border bg-card py-2 pr-2 pl-3 transition-[opacity,background-color,box-shadow] hover:bg-muted/50 hover:shadow-sm',
         isPending && 'opacity-60',
       )}
     >
+      <TagIcon className="size-3.5 shrink-0 text-muted-foreground" />
       {isEditing ? (
         <Input
           value={draft}
@@ -78,7 +80,7 @@ export function TagRow({
         type="button"
         variant="ghost"
         size="icon-xs"
-        className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+        className="shrink-0 text-muted-foreground opacity-100 transition-opacity hover:text-destructive md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
         onClick={() => onDeleteClick(tag)}
       >
         <XIcon />

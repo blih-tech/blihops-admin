@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'motion/react';
 import { FolderTreeIcon, PlusIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -21,11 +22,16 @@ import {
 } from '@/lib/api/content/categories';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
 import { toastError, toastSuccess } from '@/lib/toast';
+import {
+  staggerContainer,
+  fadeUpItem,
+} from '@/components/shared/motion-variants';
 
 const CATEGORIES_KEY = ['content', 'categories'] as const;
 
 export function CategoriesList() {
   const queryClient = useQueryClient();
+  const reduceMotion = useReducedMotion();
   const { data, error, isPending, refetch } = useQuery({
     queryKey: CATEGORIES_KEY,
     queryFn: listCategories,
@@ -222,23 +228,29 @@ export function CategoriesList() {
           }
         />
       ) : (
-        <div className="flex flex-wrap gap-2">
+        <motion.div
+          className="flex flex-wrap gap-2"
+          variants={staggerContainer}
+          initial={reduceMotion ? 'show' : 'hidden'}
+          animate="show"
+        >
           {items.map((category) => {
             const isRowPending =
               pendingRowId === category.id ||
               (updateMutation.isPending &&
                 updateMutation.variables?.id === category.id);
             return (
-              <CategoryRow
-                key={category.id}
-                category={category}
-                isPending={isRowPending}
-                onRename={handleRename}
-                onDeleteClick={setDeletingCategory}
-              />
+              <motion.div key={category.id} variants={fadeUpItem}>
+                <CategoryRow
+                  category={category}
+                  isPending={isRowPending}
+                  onRename={handleRename}
+                  onDeleteClick={setDeletingCategory}
+                />
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       <CategoryFormDialog
