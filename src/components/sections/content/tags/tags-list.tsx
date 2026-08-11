@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'motion/react';
 import { PlusIcon, TagIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -21,11 +22,16 @@ import {
 } from '@/lib/api/content/tags';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
 import { toastError, toastSuccess } from '@/lib/toast';
+import {
+  staggerContainer,
+  fadeUpItem,
+} from '@/components/shared/motion-variants';
 
 const TAGS_KEY = ['content', 'tags'] as const;
 
 export function TagsList() {
   const queryClient = useQueryClient();
+  const reduceMotion = useReducedMotion();
   const { data, error, isPending, refetch } = useQuery({
     queryKey: TAGS_KEY,
     queryFn: listTags,
@@ -208,23 +214,29 @@ export function TagsList() {
           }
         />
       ) : (
-        <div className="flex flex-wrap gap-2">
+        <motion.div
+          className="flex flex-wrap gap-2"
+          variants={staggerContainer}
+          initial={reduceMotion ? 'show' : 'hidden'}
+          animate="show"
+        >
           {items.map((tag) => {
             const isRowPending =
               pendingRowId === tag.id ||
               (updateMutation.isPending &&
                 updateMutation.variables?.id === tag.id);
             return (
-              <TagRow
-                key={tag.id}
-                tag={tag}
-                isPending={isRowPending}
-                onRename={handleRename}
-                onDeleteClick={setDeletingTag}
-              />
+              <motion.div key={tag.id} variants={fadeUpItem}>
+                <TagRow
+                  tag={tag}
+                  isPending={isRowPending}
+                  onRename={handleRename}
+                  onDeleteClick={setDeletingTag}
+                />
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       <TagFormDialog
