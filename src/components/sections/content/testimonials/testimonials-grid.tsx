@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'motion/react';
 import { MessageSquareQuoteIcon, PlusIcon, StarIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -28,12 +29,17 @@ import {
 } from '@/lib/api/content/testimonials';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
 import { toastError, toastSuccess } from '@/lib/toast';
+import {
+  staggerContainer,
+  fadeUpItem,
+} from '@/components/shared/motion-variants';
 import type { TestimonialFormValues } from '@/lib/validators/testimonial';
 
 const TESTIMONIALS_KEY = ['content', 'testimonials'] as const;
 
 export function TestimonialsGrid() {
   const queryClient = useQueryClient();
+  const reduceMotion = useReducedMotion();
   const { data, error, isPending, refetch } = useQuery({
     queryKey: TESTIMONIALS_KEY,
     queryFn: listTestimonials,
@@ -299,7 +305,12 @@ export function TestimonialsGrid() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <motion.div
+          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+          variants={staggerContainer}
+          initial={reduceMotion ? 'show' : 'hidden'}
+          animate="show"
+        >
           {[...data.items]
             .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
             .map((testimonial) => {
@@ -307,25 +318,31 @@ export function TestimonialsGrid() {
                 pendingCardId === testimonial.id ||
                 (updateMutation.isPending &&
                   updateMutation.variables?.id === testimonial.id);
-              return testimonial.isPrimary ? (
-                <PrimaryTestimonialCard
+              return (
+                <motion.div
                   key={testimonial.id}
-                  testimonial={testimonial}
-                  isPending={isCardPending}
-                  onEdit={openEdit}
-                  onDelete={setDeletingTestimonial}
-                />
-              ) : (
-                <TestimonialCard
-                  key={testimonial.id}
-                  testimonial={testimonial}
-                  isPending={isCardPending}
-                  onEdit={openEdit}
-                  onDelete={setDeletingTestimonial}
-                />
+                  variants={fadeUpItem}
+                  className="h-full"
+                >
+                  {testimonial.isPrimary ? (
+                    <PrimaryTestimonialCard
+                      testimonial={testimonial}
+                      isPending={isCardPending}
+                      onEdit={openEdit}
+                      onDelete={setDeletingTestimonial}
+                    />
+                  ) : (
+                    <TestimonialCard
+                      testimonial={testimonial}
+                      isPending={isCardPending}
+                      onEdit={openEdit}
+                      onDelete={setDeletingTestimonial}
+                    />
+                  )}
+                </motion.div>
               );
             })}
-        </div>
+        </motion.div>
       )}
 
       <TestimonialFormDialog
