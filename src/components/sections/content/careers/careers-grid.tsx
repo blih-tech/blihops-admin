@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'motion/react';
 import { BriefcaseIcon, PlusIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -25,6 +26,10 @@ import {
 } from '@/lib/api/content/careers';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
 import { toastError, toastSuccess } from '@/lib/toast';
+import {
+  staggerContainer,
+  fadeUpItem,
+} from '@/components/shared/motion-variants';
 import type { CareerFormValues } from '@/lib/validators/career';
 
 const PAGE_SIZE = 12;
@@ -57,6 +62,7 @@ function buildPayload(values: CareerFormValues): CreateCareerPayload {
 
 export function CareersGrid() {
   const queryClient = useQueryClient();
+  const reduceMotion = useReducedMotion();
   const [isActive, setIsActive] = useState<ActiveFilter>(undefined);
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
@@ -224,6 +230,7 @@ export function CareersGrid() {
     onSuccess: (result, variables) => {
       void queryClient.invalidateQueries({ queryKey: LIST_KEY });
       toastSuccess(variables.isActive ? 'Role activated' : 'Role deactivated');
+      clampPageAfterRemoval();
     },
     onError: (err, _variables, context) => {
       if (context) {
@@ -232,6 +239,17 @@ export function CareersGrid() {
       toastError('Failed to update role status', err.message);
     },
   });
+
+  function clampPageAfterRemoval() {
+    const current = queryClient.getQueryData<CareersResponse>(listQueryKey);
+    if (!current) return;
+    const visible = current.items.filter(
+      (item) => isActive === undefined || item.isActive === isActive,
+    );
+    if (visible.length === 0 && page > 1) {
+      setPage((currentPage) => Math.max(1, currentPage - 1));
+    }
+  }
 
   const deleteMutation = useMutation({
     mutationFn: deleteCareer,
@@ -248,6 +266,7 @@ export function CareersGrid() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: LIST_KEY });
       toastSuccess('Career role deleted');
+      clampPageAfterRemoval();
     },
     onError: (err, _id, context) => {
       if (context) {
@@ -332,7 +351,7 @@ export function CareersGrid() {
                 aria-pressed={isTabActive}
                 onClick={() => selectFilter(tab.value)}
                 className={cn(
-                  'cursor-pointer rounded-sm px-3 py-1.5 font-sans text-xs font-medium transition-colors',
+                  'cursor-pointer rounded-sm px-3 py-1.5 font-mono text-xs font-semibold transition-colors',
                   isTabActive
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground',
@@ -374,7 +393,12 @@ export function CareersGrid() {
         />
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+            variants={staggerContainer}
+            initial={reduceMotion ? 'show' : 'hidden'}
+            animate="show"
+          >
             {items.map((career) => {
               const isRowPending =
                 pendingCardId === career.id ||
@@ -383,18 +407,23 @@ export function CareersGrid() {
                 (toggleMutation.isPending &&
                   toggleMutation.variables?.id === career.id);
               return (
-                <CareerCard
+                <motion.div
                   key={career.id}
-                  career={career}
-                  isPending={isRowPending}
-                  onPreview={handlePreview}
-                  onEdit={handleEdit}
-                  onToggleActive={handleToggleActive}
-                  onDelete={handleDelete}
-                />
+                  variants={fadeUpItem}
+                  className="h-full"
+                >
+                  <CareerCard
+                    career={career}
+                    isPending={isRowPending}
+                    onPreview={handlePreview}
+                    onEdit={handleEdit}
+                    onToggleActive={handleToggleActive}
+                    onDelete={handleDelete}
+                  />
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
           {hasMore && (
             <div className="flex justify-center">
               <Button
