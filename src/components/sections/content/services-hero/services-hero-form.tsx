@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion } from 'motion/react';
 import { ClapperboardIcon, VideoOffIcon } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -48,12 +49,11 @@ export function ServicesHeroForm() {
 
   const hero = data?.data ?? null;
 
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const form = useForm<ServicesHeroFormValues>({
     resolver: zodResolver(servicesHeroFormSchema),
-    defaultValues: {
+    values: {
       videoUrl: hero?.videoUrl ?? '',
       coverUrl: hero?.coverUrl ?? '',
       altLabel: hero?.altLabel ?? '',
@@ -63,8 +63,6 @@ export function ServicesHeroForm() {
   const videoUrl = useWatch({ control: form.control, name: 'videoUrl' });
   const coverUrl = useWatch({ control: form.control, name: 'coverUrl' });
   const altLabel = useWatch({ control: form.control, name: 'altLabel' });
-  const videoError = uploadError ?? form.formState.errors.videoUrl?.message;
-  const coverError = uploadError ?? form.formState.errors.coverUrl?.message;
 
   const saveMutation = useMutation({
     mutationFn: saveServicesHero,
@@ -99,7 +97,9 @@ export function ServicesHeroForm() {
     coverUrl,
     altLabel,
   }).success;
-  const canSubmit = isReady && !isUploading && !saveMutation.isPending;
+  const isDirty = form.formState.isDirty;
+  const canSubmit =
+    isReady && isDirty && !isUploading && !saveMutation.isPending;
 
   if (isPending) {
     return (
@@ -160,7 +160,12 @@ export function ServicesHeroForm() {
       )}
 
       {hero ? (
-        <div className="overflow-hidden rounded-md border border-border bg-card">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="overflow-hidden rounded-md border border-border bg-card"
+        >
           <video
             src={hero.videoUrl}
             poster={hero.coverUrl}
@@ -168,7 +173,7 @@ export function ServicesHeroForm() {
             preload="metadata"
             className="aspect-video w-full object-cover"
           />
-        </div>
+        </motion.div>
       ) : (
         <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed bg-muted/20 px-6 text-center">
           <div className="flex size-12 items-center justify-center rounded-md bg-muted text-muted-foreground">
@@ -193,11 +198,9 @@ export function ServicesHeroForm() {
           <VideoUpload
             value={videoUrl}
             onChange={(url) => {
-              setUploadError(null);
               form.setValue('videoUrl', url ?? '', { shouldValidate: true });
             }}
             onUploadingChange={setIsUploading}
-            error={videoError}
             disabled={saveMutation.isPending}
           />
         </div>
@@ -207,11 +210,9 @@ export function ServicesHeroForm() {
           <CoverUpload
             value={coverUrl}
             onChange={(url) => {
-              setUploadError(null);
               form.setValue('coverUrl', url ?? '', { shouldValidate: true });
             }}
             onUploadingChange={setIsUploading}
-            error={coverError}
             disabled={saveMutation.isPending}
           />
         </div>
@@ -257,7 +258,7 @@ export function ServicesHeroForm() {
                 altLabel: hero?.altLabel ?? '',
               })
             }
-            disabled={saveMutation.isPending || isUploading}
+            disabled={saveMutation.isPending || isUploading || !isDirty}
           >
             Cancel
           </Button>
