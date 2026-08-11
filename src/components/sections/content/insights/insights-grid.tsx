@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'motion/react';
 import { NewspaperIcon, PlusIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -23,6 +24,10 @@ import {
 } from '@/lib/api/content/insights';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
 import { toastError, toastSuccess } from '@/lib/toast';
+import {
+  staggerContainer,
+  fadeUpItem,
+} from '@/components/shared/motion-variants';
 
 const PAGE_SIZE = 12;
 const LIST_KEY = ['content', 'insights'] as const;
@@ -38,6 +43,7 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 export function InsightsGrid() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const reduceMotion = useReducedMotion();
   const [status, setStatus] = useState<StatusFilter>(undefined);
   const [page, setPage] = useState(1);
   const [previewInsight, setPreviewInsight] = useState<InsightListItem | null>(
@@ -156,7 +162,7 @@ export function InsightsGrid() {
                 aria-pressed={isActive}
                 onClick={() => selectStatus(tab.value)}
                 className={cn(
-                  'cursor-pointer rounded-sm px-3 py-1.5 font-sans text-xs font-medium transition-colors',
+                  'cursor-pointer rounded-sm px-3 py-1.5 font-mono text-xs font-semibold transition-colors',
                   isActive
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground',
@@ -192,22 +198,32 @@ export function InsightsGrid() {
         />
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2">
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2"
+            variants={staggerContainer}
+            initial={reduceMotion ? 'show' : 'hidden'}
+            animate="show"
+          >
             {items.map((insight) => (
-              <InsightCard
+              <motion.div
                 key={insight.id}
-                insight={insight}
-                isPending={
-                  publishMutation.isPending &&
-                  publishMutation.variables === insight.id
-                }
-                onPreview={handlePreview}
-                onEdit={handleEdit}
-                onPublish={handlePublish}
-                onDelete={handleDelete}
-              />
+                variants={fadeUpItem}
+                className="h-full"
+              >
+                <InsightCard
+                  insight={insight}
+                  isPending={
+                    publishMutation.isPending &&
+                    publishMutation.variables === insight.id
+                  }
+                  onPreview={handlePreview}
+                  onEdit={handleEdit}
+                  onPublish={handlePublish}
+                  onDelete={handleDelete}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
           {hasMore && (
             <div className="flex justify-center">
               <Button

@@ -7,7 +7,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
-import { getInsight, type InsightListItem } from '@/lib/api/content/insights';
+import {
+  getInsight,
+  type InsightListItem,
+  type InsightLocaleContent,
+} from '@/lib/api/content/insights';
 
 type InsightPreviewDialogProps = {
   open: boolean;
@@ -27,7 +31,7 @@ export function InsightPreviewDialog({
   });
 
   const detail = data?.data;
-  const content = detail?.content.en ?? detail?.content.de;
+  const hasAnyContent = Boolean(detail?.content.en || detail?.content.de);
   const title = insight?.titles.en || insight?.titles.de || 'Insight preview';
 
   return (
@@ -44,17 +48,17 @@ export function InsightPreviewDialog({
               message={error.message}
             />
           </div>
-        ) : detail && content ? (
+        ) : detail && hasAnyContent ? (
           <article>
             <div className="relative aspect-video w-full overflow-hidden border-b border-border bg-muted">
-              {detail.media.url && detail.media.type === 'image' ? (
+              {detail.media?.url && detail.media.type === 'image' ? (
                 // eslint-disable-next-line @next/next/no-img-element -- blob-storage media URLs; next/image adds no value here
                 <img
                   src={detail.media.url}
                   alt={detail.media.alt ?? ''}
                   className="size-full object-cover"
                 />
-              ) : detail.media.url && detail.media.type === 'video' ? (
+              ) : detail.media?.url && detail.media.type === 'video' ? (
                 <video
                   src={detail.media.url}
                   controls
@@ -85,13 +89,8 @@ export function InsightPreviewDialog({
                   </span>
                 </p>
                 <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                  {content.title}
+                  {title}
                 </h2>
-                {content.excerpt && (
-                  <p className="mt-3 font-sans text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    {content.excerpt}
-                  </p>
-                )}
               </div>
 
               {detail.tags.length > 0 && (
@@ -107,31 +106,10 @@ export function InsightPreviewDialog({
                 </div>
               )}
 
-              {content.body.length > 0 ? (
-                <div className="divide-y divide-border border-t border-border">
-                  {content.body.map((section, index) => (
-                    <section key={index} className="py-6">
-                      <p className="font-mono text-[11px] font-medium tracking-widest text-muted-foreground uppercase">
-                        {section.section || `Section ${index + 1}`}
-                      </p>
-                      {section.content ? (
-                        <div
-                          className="content-prose mt-3"
-                          dangerouslySetInnerHTML={{ __html: section.content }}
-                        />
-                      ) : (
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          Not provided yet.
-                        </p>
-                      )}
-                    </section>
-                  ))}
-                </div>
-              ) : (
-                <p className="rounded-md border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-                  No sections yet.
-                </p>
-              )}
+              <div className="divide-y divide-border border-t border-border">
+                <LocaleContentBlock locale="EN" content={detail.content.en} />
+                <LocaleContentBlock locale="DE" content={detail.content.de} />
+              </div>
             </div>
           </article>
         ) : (
@@ -144,6 +122,70 @@ export function InsightPreviewDialog({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function LocaleContentBlock({
+  locale,
+  content,
+}: {
+  locale: 'EN' | 'DE';
+  content?: InsightLocaleContent;
+}) {
+  return (
+    <section className="py-6">
+      <div className="flex items-center gap-2">
+        <span className="rounded-full border border-border bg-muted px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+          {locale}
+        </span>
+        <p className="font-mono text-[11px] font-medium tracking-widest text-muted-foreground uppercase">
+          {locale === 'EN' ? 'English' : 'German'}
+        </p>
+      </div>
+
+      {content ? (
+        <>
+          <h3 className="mt-3 font-heading text-xl font-semibold tracking-tight text-foreground">
+            {content.title || 'Untitled'}
+          </h3>
+          {content.excerpt && (
+            <p className="mt-2 font-sans text-sm leading-relaxed text-muted-foreground">
+              {content.excerpt}
+            </p>
+          )}
+
+          {content.body.length > 0 ? (
+            <div className="mt-4 flex flex-col gap-4">
+              {content.body.map((section, index) => (
+                <div key={index}>
+                  <p className="font-mono text-[11px] font-medium tracking-widest text-muted-foreground uppercase">
+                    {section.section || `Section ${index + 1}`}
+                  </p>
+                  {section.content ? (
+                    <div
+                      className="content-prose mt-2"
+                      dangerouslySetInnerHTML={{ __html: section.content }}
+                    />
+                  ) : (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Not provided yet.
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 rounded-md border border-dashed border-border px-4 py-4 text-center text-sm text-muted-foreground">
+              No sections yet.
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="mt-3 text-sm text-muted-foreground">
+          This locale has no content yet.
+        </p>
+      )}
+    </section>
   );
 }
 

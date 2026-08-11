@@ -35,7 +35,10 @@ function isLocaleComplete(
   locale: 'en' | 'de',
 ): boolean {
   return Boolean(
-    insight.titles[locale] && insight.slugs[locale] && insight.excerpts[locale],
+    insight.titles[locale] &&
+    insight.slugs[locale] &&
+    insight.excerpts[locale] &&
+    insight.bodyComplete[locale],
   );
 }
 
@@ -94,16 +97,25 @@ export function InsightCard({
             sideOffset={4}
             className="w-44"
           >
-            <DropdownMenuItem onClick={() => onPreview(insight)}>
+            <DropdownMenuItem
+              onClick={() => onPreview(insight)}
+              className="focus:bg-muted focus:text-foreground"
+            >
               <EyeIcon />
               Preview
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit(insight)}>
+            <DropdownMenuItem
+              onClick={() => onEdit(insight)}
+              className="focus:bg-muted focus:text-foreground"
+            >
               <PencilIcon />
               Edit
             </DropdownMenuItem>
             {!isPublished && (
-              <DropdownMenuItem onClick={() => onPublish(insight)}>
+              <DropdownMenuItem
+                onClick={() => onPublish(insight)}
+                className="focus:bg-muted focus:text-foreground"
+              >
                 <SendIcon />
                 Publish
               </DropdownMenuItem>
