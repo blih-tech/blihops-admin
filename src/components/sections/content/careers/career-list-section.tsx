@@ -16,8 +16,6 @@ type CareerListSectionProps = {
   placeholder: string;
 };
 
-type EntryPath = `overview.${number}.value`;
-
 export function CareerListSection({
   form,
   name,
@@ -51,20 +49,14 @@ export function CareerListSection({
 
       <div className="flex flex-col gap-3">
         {fields.map((field, index) => {
-          const path = `${name}.${index}.value` as EntryPath;
           return (
             <div key={field.id} className="relative">
               <Textarea
-                value={form.getValues(path) ?? ''}
-                onChange={(event) =>
-                  form.setValue(path, event.target.value, {
-                    shouldDirty: true,
-                  })
-                }
+                {...form.register(`${name}.${index}.value`)}
                 placeholder={placeholder}
                 maxLength={500}
                 rows={1}
-                className="min-h-12 rounded-md bg-muted/40 py-2.5 pr-9 text-sm leading-relaxed hover:bg-muted/60 focus-visible:bg-background"
+                className="min-h-12 rounded-md bg-muted/40 py-2.5 pr-9 text-sm leading-relaxed field-sizing-content hover:bg-muted/60 focus-visible:bg-background"
               />
               <Button
                 type="button"
@@ -72,6 +64,12 @@ export function CareerListSection({
                 size="icon-xs"
                 className="absolute top-1.5 right-1.5 text-muted-foreground hover:text-destructive"
                 onClick={() => remove(index)}
+                disabled={fields.length <= 1}
+                title={
+                  fields.length <= 1
+                    ? 'At least one entry is required'
+                    : undefined
+                }
                 aria-label={`Remove ${label.toLowerCase()} entry ${index + 1}`}
               >
                 <Trash2Icon />

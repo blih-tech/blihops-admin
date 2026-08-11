@@ -60,7 +60,7 @@ export function CareerCard({
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className="absolute top-3 right-3 z-10 opacity-0 transition-opacity group-focus-within:opacity-100 md:group-hover:opacity-100"
+        className="absolute top-3 right-3 z-10 opacity-100 transition-opacity md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100"
       >
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -81,15 +81,24 @@ export function CareerCard({
             sideOffset={4}
             className="w-44"
           >
-            <DropdownMenuItem onClick={() => onPreview(career)}>
+            <DropdownMenuItem
+              onClick={() => onPreview(career)}
+              className="focus:bg-muted focus:text-foreground"
+            >
               <EyeIcon />
               Preview
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit(career)}>
+            <DropdownMenuItem
+              onClick={() => onEdit(career)}
+              className="focus:bg-muted focus:text-foreground"
+            >
               <PencilIcon />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onToggleActive(career)}>
+            <DropdownMenuItem
+              onClick={() => onToggleActive(career)}
+              className="focus:bg-muted focus:text-foreground"
+            >
               <PowerIcon />
               {isActive ? 'Make inactive' : 'Make active'}
             </DropdownMenuItem>

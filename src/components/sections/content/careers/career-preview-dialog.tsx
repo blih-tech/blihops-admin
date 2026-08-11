@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -51,11 +52,12 @@ export function CareerPreviewDialog({
                 {detail.employmentType}
               </p>
               <span
-                className={
+                className={cn(
+                  'rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wider uppercase',
                   detail.isActive
-                    ? 'rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium tracking-wider text-primary uppercase'
-                    : 'rounded-full border border-border bg-muted px-2.5 py-0.5 text-[10px] font-medium tracking-wider text-muted-foreground uppercase'
-                }
+                    ? 'border-primary/20 bg-primary/10 text-primary'
+                    : 'border-border bg-muted text-muted-foreground',
+                )}
               >
                 {detail.isActive ? 'Active' : 'Inactive'}
               </span>
