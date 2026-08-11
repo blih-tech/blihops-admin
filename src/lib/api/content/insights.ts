@@ -53,6 +53,7 @@ export type InsightListItem = {
   slugs: { en: string; de: string };
   titles: { en: string; de: string };
   excerpts: { en: string; de: string };
+  bodyComplete: { en: boolean; de: boolean };
   author: string;
   readTimeMinutes: number;
   category: InsightCategory;
@@ -98,7 +99,7 @@ export type UpdateInsightPayload =
       author?: string;
       readTimeMinutes?: number;
       categoryId?: string | null;
-      media?: InsightMedia;
+      media?: InsightMedia | null;
       tags?: string[];
     }
   | {
