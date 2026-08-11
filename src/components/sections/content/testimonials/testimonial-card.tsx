@@ -83,7 +83,10 @@ export function TestimonialCard({
             sideOffset={4}
             className="w-40"
           >
-            <DropdownMenuItem onClick={() => onEdit(testimonial)}>
+            <DropdownMenuItem
+              onClick={() => onEdit(testimonial)}
+              className="focus:bg-muted focus:text-foreground"
+            >
               <PencilIcon />
               Edit
             </DropdownMenuItem>
