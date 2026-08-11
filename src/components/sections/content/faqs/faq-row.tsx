@@ -60,6 +60,31 @@ export function FaqRow({
       )}
     >
       <div className="flex items-center gap-3 px-5 py-4">
+        <div className="flex shrink-0 flex-col">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={`Move question ${faq.displayOrder} up`}
+            disabled={!canMoveUp || isMoving}
+            onClick={() => onMoveUp(faq)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ChevronUpIcon />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={`Move question ${faq.displayOrder} down`}
+            disabled={!canMoveDown || isMoving}
+            onClick={() => onMoveDown(faq)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ChevronDownIcon />
+          </Button>
+        </div>
+
         <button
           type="button"
           aria-expanded={isOpen}
@@ -110,31 +135,6 @@ export function FaqRow({
             )}
           />
         </button>
-
-        <div className="flex shrink-0 flex-col">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={`Move question ${faq.displayOrder} up`}
-            disabled={!canMoveUp || isMoving}
-            onClick={() => onMoveUp(faq)}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <ChevronUpIcon />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={`Move question ${faq.displayOrder} down`}
-            disabled={!canMoveDown || isMoving}
-            onClick={() => onMoveDown(faq)}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <ChevronDownIcon />
-          </Button>
-        </div>
 
         <span
           className={cn(
@@ -194,7 +194,7 @@ export function FaqRow({
         )}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="ml-[68px] flex flex-col gap-3 border-t border-border pb-5 pr-5 pt-4">
+          <div className="ml-[104px] flex flex-col gap-3 border-t border-border pb-5 pr-5 pt-4">
             {faq.content.en && (
               <div className="flex items-baseline gap-2">
                 <span className="w-6 shrink-0 font-mono text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
