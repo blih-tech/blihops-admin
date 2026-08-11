@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'motion/react';
 import { ImagePlusIcon, PlusIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -21,12 +22,17 @@ import {
 } from '@/lib/api/content/logos';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
 import { toastError, toastSuccess } from '@/lib/toast';
+import {
+  staggerContainer,
+  fadeUpItem,
+} from '@/components/shared/motion-variants';
 import type { LogoFormValues } from '@/lib/validators/logo';
 
 const LOGOS_KEY = ['content', 'logos'] as const;
 
 export function LogosGrid() {
   const queryClient = useQueryClient();
+  const reduceMotion = useReducedMotion();
   const { data, error, isPending, refetch } = useQuery({
     queryKey: LOGOS_KEY,
     queryFn: listLogos,
@@ -213,24 +219,30 @@ export function LogosGrid() {
           }
         />
       ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+        <motion.div
+          className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4"
+          variants={staggerContainer}
+          initial={reduceMotion ? 'show' : 'hidden'}
+          animate="show"
+        >
           {data.items.map((logo) => (
-            <LogoCard
-              key={logo.id}
-              logo={logo}
-              isPending={
-                pendingCardId === logo.id ||
-                (updateMutation.isPending &&
-                  updateMutation.variables?.id === logo.id)
-              }
-              onEdit={(logoToEdit) => {
-                setEditingLogo(logoToEdit);
-                setFormOpen(true);
-              }}
-              onDelete={setDeletingLogo}
-            />
+            <motion.div key={logo.id} variants={fadeUpItem} className="h-full">
+              <LogoCard
+                logo={logo}
+                isPending={
+                  pendingCardId === logo.id ||
+                  (updateMutation.isPending &&
+                    updateMutation.variables?.id === logo.id)
+                }
+                onEdit={(logoToEdit) => {
+                  setEditingLogo(logoToEdit);
+                  setFormOpen(true);
+                }}
+                onDelete={setDeletingLogo}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       <LogoFormDialog
