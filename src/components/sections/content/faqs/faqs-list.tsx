@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'motion/react';
 import { MessageCircleQuestionIcon, PlusIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -23,6 +24,10 @@ import {
 } from '@/lib/api/content/faqs';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
 import { toastError, toastSuccess } from '@/lib/toast';
+import {
+  staggerContainer,
+  fadeUpItem,
+} from '@/components/shared/motion-variants';
 import type { FaqFormValues } from '@/lib/validators/faq';
 
 const FAQS_KEY = ['content', 'faqs'] as const;
@@ -37,6 +42,7 @@ const STATUS_TABS: { value: ActiveFilter; label: string }[] = [
 
 export function FaqsList() {
   const queryClient = useQueryClient();
+  const reduceMotion = useReducedMotion();
   const [isActive, setIsActive] = useState<ActiveFilter>(undefined);
   const [formOpen, setFormOpen] = useState(false);
   const [draftValues, setDraftValues] = useState<FaqFormValues | null>(null);
@@ -371,7 +377,12 @@ export function FaqsList() {
           }
         />
       ) : (
-        <div className="divide-y divide-border border border-border bg-card">
+        <motion.div
+          className="divide-y divide-border border border-border bg-card"
+          variants={staggerContainer}
+          initial={reduceMotion ? 'show' : 'hidden'}
+          animate="show"
+        >
           {items.map((faq) => {
             const isRowPending =
               pendingRowId === faq.id ||
@@ -380,27 +391,28 @@ export function FaqsList() {
               (toggleMutation.isPending &&
                 toggleMutation.variables?.id === faq.id);
             return (
-              <FaqRow
-                key={faq.id}
-                faq={faq}
-                isPending={isRowPending}
-                canMoveUp={faq.id !== firstItemId}
-                canMoveDown={faq.id !== lastItemId}
-                isMoving={moveMutation.isPending}
-                onMoveUp={(row) => handleMove(row, -1)}
-                onMoveDown={(row) => handleMove(row, 1)}
-                onEdit={openEdit}
-                onToggleActive={(row) =>
-                  toggleMutation.mutate({
-                    id: row.id,
-                    isActive: !row.isActive,
-                  })
-                }
-                onDelete={setDeletingFaq}
-              />
+              <motion.div key={faq.id} variants={fadeUpItem}>
+                <FaqRow
+                  faq={faq}
+                  isPending={isRowPending}
+                  canMoveUp={faq.id !== firstItemId}
+                  canMoveDown={faq.id !== lastItemId}
+                  isMoving={moveMutation.isPending}
+                  onMoveUp={(row) => handleMove(row, -1)}
+                  onMoveDown={(row) => handleMove(row, 1)}
+                  onEdit={openEdit}
+                  onToggleActive={(row) =>
+                    toggleMutation.mutate({
+                      id: row.id,
+                      isActive: !row.isActive,
+                    })
+                  }
+                  onDelete={setDeletingFaq}
+                />
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       <FaqFormDialog

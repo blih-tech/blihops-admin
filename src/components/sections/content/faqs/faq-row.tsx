@@ -166,11 +166,17 @@ export function FaqRow({
             sideOffset={4}
             className="w-44"
           >
-            <DropdownMenuItem onClick={() => onEdit(faq)}>
+            <DropdownMenuItem
+              onClick={() => onEdit(faq)}
+              className="focus:bg-muted focus:text-foreground"
+            >
               <PencilIcon />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onToggleActive(faq)}>
+            <DropdownMenuItem
+              onClick={() => onToggleActive(faq)}
+              className="focus:bg-muted focus:text-foreground"
+            >
               <PowerIcon />
               {isActive ? 'Make inactive' : 'Make active'}
             </DropdownMenuItem>
