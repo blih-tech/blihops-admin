@@ -69,7 +69,10 @@ export function LogoCard({
             sideOffset={4}
             className="w-40"
           >
-            <DropdownMenuItem onClick={() => onEdit(logo)}>
+            <DropdownMenuItem
+              onClick={() => onEdit(logo)}
+              className="focus:bg-muted focus:text-foreground"
+            >
               <PencilIcon />
               Edit
             </DropdownMenuItem>
