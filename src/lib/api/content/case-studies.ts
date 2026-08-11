@@ -51,6 +51,7 @@ export type CaseStudyListItem = {
   slugs: { en: string; de: string };
   titles: { en: string; de: string };
   summaries: { en: string; de: string };
+  bodyComplete: { en: boolean; de: boolean };
   client: string;
   category: CaseStudyCategory;
   media: CaseStudyMedia;
@@ -93,7 +94,7 @@ export type UpdateCaseStudyPayload =
   | {
       client?: string;
       categoryId?: string | null;
-      media?: CaseStudyMedia;
+      media?: CaseStudyMedia | null;
       tags?: string[];
     }
   | {

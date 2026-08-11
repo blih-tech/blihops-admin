@@ -37,7 +37,8 @@ function isLocaleComplete(
   return Boolean(
     caseStudy.titles[locale] &&
     caseStudy.slugs[locale] &&
-    caseStudy.summaries[locale],
+    caseStudy.summaries[locale] &&
+    caseStudy.bodyComplete[locale],
   );
 }
 
@@ -97,16 +98,25 @@ export function CaseStudyCard({
             sideOffset={4}
             className="w-44"
           >
-            <DropdownMenuItem onClick={() => onPreview(caseStudy)}>
+            <DropdownMenuItem
+              onClick={() => onPreview(caseStudy)}
+              className="focus:bg-muted focus:text-foreground"
+            >
               <EyeIcon />
               Preview
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit(caseStudy)}>
+            <DropdownMenuItem
+              onClick={() => onEdit(caseStudy)}
+              className="focus:bg-muted focus:text-foreground"
+            >
               <PencilIcon />
               Edit
             </DropdownMenuItem>
             {!isPublished && (
-              <DropdownMenuItem onClick={() => onPublish(caseStudy)}>
+              <DropdownMenuItem
+                onClick={() => onPublish(caseStudy)}
+                className="focus:bg-muted focus:text-foreground"
+              >
                 <SendIcon />
                 Publish
               </DropdownMenuItem>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'motion/react';
 import { FolderOpenIcon, PlusIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -23,6 +24,10 @@ import {
 } from '@/lib/api/content/case-studies';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
 import { toastError, toastSuccess } from '@/lib/toast';
+import {
+  staggerContainer,
+  fadeUpItem,
+} from '@/components/shared/motion-variants';
 
 const PAGE_SIZE = 12;
 const LIST_KEY = ['content', 'case-studies'] as const;
@@ -38,6 +43,7 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 export function CaseStudiesGrid() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const reduceMotion = useReducedMotion();
   const [status, setStatus] = useState<StatusFilter>(undefined);
   const [page, setPage] = useState(1);
   const [previewCaseStudy, setPreviewCaseStudy] =
@@ -155,7 +161,7 @@ export function CaseStudiesGrid() {
                 aria-pressed={isActive}
                 onClick={() => selectStatus(tab.value)}
                 className={cn(
-                  'cursor-pointer rounded-sm px-3 py-1.5 font-sans text-xs font-medium transition-colors',
+                  'cursor-pointer rounded-sm px-3 py-1.5 font-mono text-xs font-semibold transition-colors',
                   isActive
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground',
@@ -191,22 +197,32 @@ export function CaseStudiesGrid() {
         />
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2">
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2"
+            variants={staggerContainer}
+            initial={reduceMotion ? 'show' : 'hidden'}
+            animate="show"
+          >
             {items.map((caseStudy) => (
-              <CaseStudyCard
+              <motion.div
                 key={caseStudy.id}
-                caseStudy={caseStudy}
-                isPending={
-                  publishMutation.isPending &&
-                  publishMutation.variables === caseStudy.id
-                }
-                onPreview={handlePreview}
-                onEdit={handleEdit}
-                onPublish={handlePublish}
-                onDelete={handleDelete}
-              />
+                variants={fadeUpItem}
+                className="h-full"
+              >
+                <CaseStudyCard
+                  caseStudy={caseStudy}
+                  isPending={
+                    publishMutation.isPending &&
+                    publishMutation.variables === caseStudy.id
+                  }
+                  onPreview={handlePreview}
+                  onEdit={handleEdit}
+                  onPublish={handlePublish}
+                  onDelete={handleDelete}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
           {hasMore && (
             <div className="flex justify-center">
               <Button

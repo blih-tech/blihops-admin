@@ -129,8 +129,8 @@ function buildEditPatches(
       ...(values.categoryId !== undefined
         ? { categoryId: values.categoryId ?? null }
         : {}),
-      ...(values.media ? { media: values.media } : {}),
-      ...(values.tags && values.tags.length > 0 ? { tags: values.tags } : {}),
+      media: values.media ?? null,
+      tags: values.tags ?? [],
     },
   ];
 
@@ -394,6 +394,16 @@ function CaseStudyFormFields({
               onUploadingChange={setIsUploading}
               disabled={isBusy}
             />
+            {form.formState.errors.media?.url && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.media.url.message}
+              </p>
+            )}
+            {form.formState.errors.media?.type && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.media.type.message}
+              </p>
+            )}
           </div>
         </div>
 
