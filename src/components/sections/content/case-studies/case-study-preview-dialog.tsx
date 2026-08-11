@@ -10,6 +10,7 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import {
   getCaseStudy,
   type CaseStudyListItem,
+  type CaseStudyLocaleContent,
 } from '@/lib/api/content/case-studies';
 
 const SECTIONS = [
@@ -36,7 +37,7 @@ export function CaseStudyPreviewDialog({
   });
 
   const detail = data?.data;
-  const content = detail?.content.en ?? detail?.content.de;
+  const hasAnyContent = Boolean(detail?.content.en || detail?.content.de);
   const title =
     caseStudy?.titles.en || caseStudy?.titles.de || 'Case study preview';
 
@@ -54,17 +55,17 @@ export function CaseStudyPreviewDialog({
               message={error.message}
             />
           </div>
-        ) : detail && content ? (
+        ) : detail && hasAnyContent ? (
           <article>
             <div className="relative aspect-video w-full overflow-hidden border-b border-border bg-muted">
-              {detail.media.url && detail.media.type === 'image' ? (
+              {detail.media?.url && detail.media.type === 'image' ? (
                 // eslint-disable-next-line @next/next/no-img-element -- blob-storage media URLs; next/image adds no value here
                 <img
                   src={detail.media.url}
                   alt={detail.media.alt ?? ''}
                   className="size-full object-cover"
                 />
-              ) : detail.media.url && detail.media.type === 'video' ? (
+              ) : detail.media?.url && detail.media.type === 'video' ? (
                 <video
                   src={detail.media.url}
                   controls
@@ -91,13 +92,8 @@ export function CaseStudyPreviewDialog({
                   </span>
                 </p>
                 <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                  {content.title}
+                  {title}
                 </h2>
-                {content.summary && (
-                  <p className="mt-3 font-sans text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    {content.summary}
-                  </p>
-                )}
               </div>
 
               {detail.tags.length > 0 && (
@@ -114,26 +110,8 @@ export function CaseStudyPreviewDialog({
               )}
 
               <div className="divide-y divide-border border-t border-border">
-                {SECTIONS.map((section) => {
-                  const html = content.body?.[section.key];
-                  return (
-                    <section key={section.key} className="py-6">
-                      <p className="font-mono text-[11px] font-medium tracking-widest text-muted-foreground uppercase">
-                        {section.label}
-                      </p>
-                      {html ? (
-                        <div
-                          className="content-prose mt-3"
-                          dangerouslySetInnerHTML={{ __html: html }}
-                        />
-                      ) : (
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          Not provided yet.
-                        </p>
-                      )}
-                    </section>
-                  );
-                })}
+                <LocaleContentBlock locale="EN" content={detail.content.en} />
+                <LocaleContentBlock locale="DE" content={detail.content.de} />
               </div>
             </div>
           </article>
@@ -147,6 +125,67 @@ export function CaseStudyPreviewDialog({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function LocaleContentBlock({
+  locale,
+  content,
+}: {
+  locale: 'EN' | 'DE';
+  content?: CaseStudyLocaleContent;
+}) {
+  return (
+    <section className="py-6">
+      <div className="flex items-center gap-2">
+        <span className="rounded-full border border-border bg-muted px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+          {locale}
+        </span>
+        <p className="font-mono text-[11px] font-medium tracking-widest text-muted-foreground uppercase">
+          {locale === 'EN' ? 'English' : 'German'}
+        </p>
+      </div>
+
+      {content ? (
+        <>
+          <h3 className="mt-3 font-heading text-xl font-semibold tracking-tight text-foreground">
+            {content.title || 'Untitled'}
+          </h3>
+          {content.summary && (
+            <p className="mt-2 font-sans text-sm leading-relaxed text-muted-foreground">
+              {content.summary}
+            </p>
+          )}
+
+          <div className="mt-4 flex flex-col gap-4">
+            {SECTIONS.map((section) => {
+              const html = content.body?.[section.key];
+              return (
+                <div key={section.key}>
+                  <p className="font-mono text-[11px] font-medium tracking-widest text-muted-foreground uppercase">
+                    {section.label}
+                  </p>
+                  {html ? (
+                    <div
+                      className="content-prose mt-2"
+                      dangerouslySetInnerHTML={{ __html: html }}
+                    />
+                  ) : (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Not provided yet.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <p className="mt-3 text-sm text-muted-foreground">
+          This locale has no content yet.
+        </p>
+      )}
+    </section>
   );
 }
 
