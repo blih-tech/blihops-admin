@@ -250,6 +250,8 @@ export function FaqsList() {
   const nextDisplayOrder =
     (data?.items.reduce((max, faq) => Math.max(max, faq.displayOrder), -1) ??
       -1) + 1;
+  const firstItemId = data?.items[0]?.id;
+  const lastItemId = data?.items[data.items.length - 1]?.id;
 
   function openCreate() {
     setDraftValues(null);
@@ -269,6 +271,20 @@ export function FaqsList() {
     } else {
       createMutation.mutate(values);
     }
+  }
+
+  function handleMove(faq: Faq, direction: -1 | 1) {
+    const ordered = data?.items ?? [];
+    const index = ordered.findIndex((item) => item.id === faq.id);
+    const neighborIndex = index + direction;
+    if (index < 0 || neighborIndex < 0 || neighborIndex >= ordered.length) {
+      return;
+    }
+    const neighbor = ordered[neighborIndex];
+    moveMutation.mutate({
+      first: { id: faq.id, displayOrder: neighbor.displayOrder },
+      second: { id: neighbor.id, displayOrder: faq.displayOrder },
+    });
   }
 
   function handleConfirmDelete() {
@@ -356,7 +372,7 @@ export function FaqsList() {
         />
       ) : (
         <div className="divide-y divide-border border border-border bg-card">
-          {items.map((faq, index) => {
+          {items.map((faq) => {
             const isRowPending =
               pendingRowId === faq.id ||
               (editMutation.isPending &&
@@ -367,8 +383,12 @@ export function FaqsList() {
               <FaqRow
                 key={faq.id}
                 faq={faq}
-                index={index}
                 isPending={isRowPending}
+                canMoveUp={faq.id !== firstItemId}
+                canMoveDown={faq.id !== lastItemId}
+                isMoving={moveMutation.isPending}
+                onMoveUp={(row) => handleMove(row, -1)}
+                onMoveDown={(row) => handleMove(row, 1)}
                 onEdit={openEdit}
                 onToggleActive={(row) =>
                   toggleMutation.mutate({
