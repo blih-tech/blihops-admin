@@ -9,9 +9,10 @@ import { getServiceIcon } from './service-icons';
 
 type ServiceCardProps = {
   service: Service;
+  isPending?: boolean;
 };
 
-export function ServiceCard({ service }: ServiceCardProps) {
+export function ServiceCard({ service, isPending = false }: ServiceCardProps) {
   const title =
     service.content.en?.title ||
     service.content.de?.title ||
@@ -20,7 +21,13 @@ export function ServiceCard({ service }: ServiceCardProps) {
   const tag = service.content.en?.tag || service.content.de?.tag;
 
   return (
-    <article className="group relative flex min-h-full min-w-0 flex-col border border-border bg-background p-4 transition-[background-color] duration-300 hover:bg-muted/50 sm:p-5">
+    <article
+      aria-busy={isPending}
+      className={cn(
+        'group relative flex min-h-full min-w-0 flex-col border border-border bg-background p-4 transition-[opacity,background-color] duration-300 hover:bg-muted/50 sm:p-5',
+        isPending && 'opacity-60',
+      )}
+    >
       <div className="relative aspect-video overflow-hidden rounded-md border border-border bg-muted">
         {/* eslint-disable-next-line @next/next/no-img-element -- blob-storage media URLs; next/image adds no value at this size */}
         <img
