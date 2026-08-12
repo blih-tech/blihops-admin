@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 import { HeroForm } from './hero-form';
+import { ServicesList } from './services-list';
 
 type ServicesTab = 'hero' | 'services';
 
@@ -40,15 +41,7 @@ export function ServicesPage() {
         })}
       </div>
 
-      {activeTab === 'hero' ? (
-        <HeroForm />
-      ) : (
-        <div className="flex min-h-48 items-center justify-center rounded-md border border-dashed border-border bg-muted/30">
-          <p className="px-6 text-center font-sans text-sm text-muted-foreground">
-            Service management is coming soon.
-          </p>
-        </div>
-      )}
+      {activeTab === 'hero' ? <HeroForm /> : <ServicesList />}
     </div>
   );
 }
