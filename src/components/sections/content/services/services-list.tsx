@@ -27,6 +27,7 @@ import type { ServiceFormValues } from '@/lib/validators/services';
 
 import { ServiceCard } from './service-card';
 import { ServiceFormDialog } from './service-form-dialog';
+import { ServicePreviewDialog } from './service-preview-dialog';
 
 const SERVICES_KEY = ['content', 'services', 'admin'] as const;
 
@@ -35,6 +36,7 @@ export function ServicesList() {
   const reduceMotion = useReducedMotion();
   const [formOpen, setFormOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [previewService, setPreviewService] = useState<Service | null>(null);
   const [draftValues, setDraftValues] = useState<ServiceFormValues | null>(
     null,
   );
@@ -176,6 +178,10 @@ export function ServicesList() {
     setFormOpen(true);
   }
 
+  function openPreview(service: Service) {
+    setPreviewService(service);
+  }
+
   function handleSave(values: ServiceFormValues) {
     if (editingService) {
       editMutation.mutate({ id: editingService.id, values });
@@ -240,6 +246,7 @@ export function ServicesList() {
               <ServiceCard
                 service={service}
                 isPending={service.id === pendingId}
+                onPreview={openPreview}
                 onEdit={openEdit}
               />
             </motion.div>
@@ -255,6 +262,16 @@ export function ServicesList() {
         nextDisplayOrder={nextDisplayOrder}
         isSaving={createMutation.isPending || editMutation.isPending}
         onSave={handleSave}
+      />
+
+      <ServicePreviewDialog
+        open={Boolean(previewService)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewService(null);
+          }
+        }}
+        service={previewService}
       />
     </div>
   );

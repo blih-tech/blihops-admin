@@ -24,12 +24,14 @@ import { getServiceIcon } from './service-icons';
 type ServiceCardProps = {
   service: Service;
   isPending?: boolean;
+  onPreview?: (service: Service) => void;
   onEdit?: (service: Service) => void;
 };
 
 export function ServiceCard({
   service,
   isPending = false,
+  onPreview,
   onEdit,
 }: ServiceCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -43,8 +45,17 @@ export function ServiceCard({
   return (
     <article
       aria-busy={isPending}
+      role="button"
+      tabIndex={0}
+      onClick={() => onPreview?.(service)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onPreview?.(service);
+        }
+      }}
       className={cn(
-        'group relative flex min-h-full min-w-0 flex-col border border-border bg-background p-4 transition-[opacity,background-color] duration-300 hover:bg-muted/50 sm:p-5',
+        'group relative flex min-h-full min-w-0 cursor-pointer flex-col border border-border bg-background p-4 transition-[opacity,background-color] duration-300 hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/30 sm:p-5',
         isPending && 'opacity-60',
       )}
     >
@@ -87,7 +98,10 @@ export function ServiceCard({
             className="w-44"
           >
             <DropdownMenuItem
-              onClick={() => setMenuOpen(false)}
+              onClick={() => {
+                setMenuOpen(false);
+                onPreview?.(service);
+              }}
               className="focus:bg-muted focus:text-foreground"
             >
               <EyeIcon />
