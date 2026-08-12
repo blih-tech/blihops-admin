@@ -101,3 +101,10 @@ export async function updateService(
     body: payload,
   });
 }
+
+export async function deleteService(id: string): Promise<void> {
+  return apiFetch<void>(`${SERVICES_PATH}/${id}`, {
+    method: 'DELETE',
+    responseType: 'none',
+  });
+}

@@ -15,6 +15,7 @@ import {
 } from '@/components/shared/motion-variants';
 import {
   createService,
+  deleteService,
   listServices,
   updateService,
   type Service,
@@ -28,6 +29,7 @@ import type { ServiceFormValues } from '@/lib/validators/services';
 import { ServiceCard } from './service-card';
 import { ServiceFormDialog } from './service-form-dialog';
 import { ServicePreviewDialog } from './service-preview-dialog';
+import { ConfirmDeleteServiceDialog } from './confirm-delete-service-dialog';
 
 const SERVICES_KEY = ['content', 'services', 'admin'] as const;
 
@@ -37,6 +39,7 @@ export function ServicesList() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [previewService, setPreviewService] = useState<Service | null>(null);
+  const [deletingService, setDeletingService] = useState<Service | null>(null);
   const [draftValues, setDraftValues] = useState<ServiceFormValues | null>(
     null,
   );
@@ -166,6 +169,33 @@ export function ServicesList() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteService,
+    onMutate: async (id) => {
+      const previous = takeSnapshot<ServicesResponse>(
+        queryClient,
+        SERVICES_KEY,
+      );
+      queryClient.setQueryData<ServicesResponse>(SERVICES_KEY, (old) =>
+        old
+          ? { ...old, items: old.items.filter((item) => item.id !== id) }
+          : old,
+      );
+      setDeletingService(null);
+      return { previous };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: SERVICES_KEY });
+      toastSuccess('Service deleted');
+    },
+    onError: (err, _id, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, SERVICES_KEY, context.previous);
+      }
+      toastError('Failed to delete service', err.message);
+    },
+  });
+
   function openCreate() {
     setDraftValues(null);
     setEditingService(null);
@@ -180,6 +210,16 @@ export function ServicesList() {
 
   function openPreview(service: Service) {
     setPreviewService(service);
+  }
+
+  function handleDelete(service: Service) {
+    setDeletingService(service);
+  }
+
+  function handleConfirmDelete() {
+    if (deletingService) {
+      deleteMutation.mutate(deletingService.id);
+    }
   }
 
   function handleSave(values: ServiceFormValues) {
@@ -248,6 +288,7 @@ export function ServicesList() {
                 isPending={service.id === pendingId}
                 onPreview={openPreview}
                 onEdit={openEdit}
+                onDelete={handleDelete}
               />
             </motion.div>
           ))}
@@ -272,6 +313,18 @@ export function ServicesList() {
           }
         }}
         service={previewService}
+      />
+
+      <ConfirmDeleteServiceDialog
+        open={Boolean(deletingService)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingService(null);
+          }
+        }}
+        service={deletingService}
+        isDeleting={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );
