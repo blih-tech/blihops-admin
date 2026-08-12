@@ -26,6 +26,7 @@ type ServiceCardProps = {
   isPending?: boolean;
   onPreview?: (service: Service) => void;
   onEdit?: (service: Service) => void;
+  onDelete?: (service: Service) => void;
 };
 
 export function ServiceCard({
@@ -33,6 +34,7 @@ export function ServiceCard({
   isPending = false,
   onPreview,
   onEdit,
+  onDelete,
 }: ServiceCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const title =
@@ -120,7 +122,10 @@ export function ServiceCard({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
-              onClick={() => setMenuOpen(false)}
+              onClick={() => {
+                setMenuOpen(false);
+                onDelete?.(service);
+              }}
             >
               <Trash2Icon />
               Delete
