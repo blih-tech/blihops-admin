@@ -12,25 +12,9 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-/**
- * Icon whitelist shared with the API schema and the web icon registry.
- * Keys are the contract — extending the whitelist means updating all three
- * (content model §4.10.1).
- */
-export const serviceIcons = [
-  'headset',
-  'files',
-  'code',
-  'bot',
-  'chart-column',
-  'globe',
-  'shield-check',
-  'database',
-  'users',
-  'sparkles',
-] as const;
+import { serviceIcons, type ServiceIconKey } from '@/lib/api/content/services';
 
-export type ServiceIconKey = (typeof serviceIcons)[number];
+export { serviceIcons, type ServiceIconKey };
 
 export const serviceIconRegistry: Record<ServiceIconKey, LucideIcon> = {
   headset: HeadsetIcon,
