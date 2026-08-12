@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'motion/react';
 import { ClapperboardIcon, VideoOffIcon } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -14,8 +13,9 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dots } from '@/components/shared/Dots';
 import { ErrorState } from '@/components/shared/ErrorState';
-import { VideoUpload } from '@/components/sections/content/services-hero/video-upload';
-import { CoverUpload } from '@/components/sections/content/services-hero/cover-upload';
+import { VideoCard } from '@/components/shared/video-card';
+import { VideoUpload } from '@/components/sections/content/services/video-upload';
+import { CoverUpload } from '@/components/sections/content/services/cover-upload';
 import {
   getServicesHero,
   saveServicesHero,
@@ -40,7 +40,7 @@ function formatUpdatedAt(iso: string): string {
   });
 }
 
-export function ServicesHeroForm() {
+export function HeroForm() {
   const queryClient = useQueryClient();
   const { data, error, isPending, refetch } = useQuery({
     queryKey: SERVICES_HERO_KEY,
@@ -160,20 +160,11 @@ export function ServicesHeroForm() {
       )}
 
       {hero ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="overflow-hidden rounded-md border border-border bg-card"
-        >
-          <video
-            src={hero.videoUrl}
-            poster={hero.coverUrl}
-            controls
-            preload="metadata"
-            className="aspect-video w-full object-cover"
-          />
-        </motion.div>
+        <VideoCard
+          src={hero.videoUrl}
+          poster={hero.coverUrl}
+          className="aspect-video w-full"
+        />
       ) : (
         <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed bg-muted/20 px-6 text-center">
           <div className="flex size-12 items-center justify-center rounded-md bg-muted text-muted-foreground">

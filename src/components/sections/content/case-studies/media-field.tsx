@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { ImageIcon, VideoIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { VideoUpload } from '@/components/sections/content/services-hero/video-upload';
-import { CoverUpload } from '@/components/sections/content/services-hero/cover-upload';
+import { VideoUpload } from '@/components/sections/content/services/video-upload';
+import { CoverUpload } from '@/components/sections/content/services/cover-upload';
 import type { CaseStudyMedia } from '@/lib/api/content/case-studies';
 
 type MediaFieldProps = {
