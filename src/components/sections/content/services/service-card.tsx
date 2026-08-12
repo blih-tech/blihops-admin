@@ -1,8 +1,22 @@
 'use client';
 
-import { createElement } from 'react';
+import { createElement, useState } from 'react';
+import {
+  EllipsisVerticalIcon,
+  EyeIcon,
+  PencilIcon,
+  Trash2Icon,
+} from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { Service } from '@/lib/api/content/services';
 
 import { getServiceIcon } from './service-icons';
@@ -10,9 +24,15 @@ import { getServiceIcon } from './service-icons';
 type ServiceCardProps = {
   service: Service;
   isPending?: boolean;
+  onEdit?: (service: Service) => void;
 };
 
-export function ServiceCard({ service, isPending = false }: ServiceCardProps) {
+export function ServiceCard({
+  service,
+  isPending = false,
+  onEdit,
+}: ServiceCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const title =
     service.content.en?.title ||
     service.content.de?.title ||
@@ -33,14 +53,66 @@ export function ServiceCard({ service, isPending = false }: ServiceCardProps) {
         <img
           src={service.imageUrl}
           alt={service.alt}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
         />
-        <div className="absolute top-3 left-3 flex size-9 items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm backdrop-blur-sm">
+        <div className="absolute top-3 left-3 flex size-9 items-center justify-center rounded-md border border-border bg-foreground/90 text-background shadow-sm">
           {createElement(getServiceIcon(service.icon), {
             className: 'size-4',
             strokeWidth: 1.75,
           })}
         </div>
+      </div>
+
+      <div
+        onClick={(event) => event.stopPropagation()}
+        className="absolute top-3 right-3 z-10 opacity-0 transition-opacity group-focus-within:opacity-100 md:group-hover:opacity-100"
+      >
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="bg-foreground text-background hover:bg-foreground/90 hover:text-background"
+              />
+            }
+          >
+            <EllipsisVerticalIcon />
+            <span className="sr-only">Service actions</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="bottom"
+            align="end"
+            sideOffset={4}
+            className="w-44"
+          >
+            <DropdownMenuItem
+              onClick={() => setMenuOpen(false)}
+              className="focus:bg-muted focus:text-foreground"
+            >
+              <EyeIcon />
+              Preview
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setMenuOpen(false);
+                onEdit?.(service);
+              }}
+              className="focus:bg-muted focus:text-foreground"
+            >
+              <PencilIcon />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => setMenuOpen(false)}
+            >
+              <Trash2Icon />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="flex flex-1 flex-col pt-4">

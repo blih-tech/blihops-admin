@@ -70,6 +70,15 @@ export type CreateServicePayload = {
   };
 };
 
+export type UpdateServicePayload = {
+  icon?: ServiceIconKey;
+  imageUrl?: string;
+  alt?: string;
+  displayOrder?: number;
+  locale?: 'en' | 'de';
+  content?: ServiceLocaleContent;
+};
+
 export async function listServices(): Promise<ServicesResponse> {
   return apiFetch<ServicesResponse>(SERVICES_PATH);
 }
@@ -79,6 +88,16 @@ export async function createService(
 ): Promise<ServiceResponse> {
   return apiFetch<ServiceResponse>(SERVICES_PATH, {
     method: 'POST',
+    body: payload,
+  });
+}
+
+export async function updateService(
+  id: string,
+  payload: UpdateServicePayload,
+): Promise<ServiceResponse> {
+  return apiFetch<ServiceResponse>(`${SERVICES_PATH}/${id}`, {
+    method: 'PATCH',
     body: payload,
   });
 }
