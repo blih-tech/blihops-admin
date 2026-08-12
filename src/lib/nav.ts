@@ -48,8 +48,8 @@ export const contentNav: SidebarNavItem[] = [
     icon: MessageSquareQuoteIcon,
   },
   {
-    title: 'Services Hero',
-    url: '/content/services-hero',
+    title: 'Services',
+    url: '/content/services',
     icon: ClapperboardIcon,
   },
   { title: 'Case Studies', url: '/content/case-studies', icon: FolderOpenIcon },
