@@ -26,7 +26,11 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dots } from '@/components/shared/Dots';
-import { serviceIcons, type ServiceIconKey } from '@/lib/api/content/services';
+import {
+  serviceIcons,
+  type Service,
+  type ServiceIconKey,
+} from '@/lib/api/content/services';
 import {
   serviceFormSchema,
   type ServiceFormValues,
@@ -47,6 +51,8 @@ const MAX_FEATURES = 6;
 type ServiceFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  service?: Service | null;
+  initialValues?: ServiceFormValues | null;
   nextDisplayOrder: number;
   isSaving: boolean;
   onSave: (values: ServiceFormValues) => void;
@@ -55,23 +61,31 @@ type ServiceFormDialogProps = {
 export function ServiceFormDialog({
   open,
   onOpenChange,
+  service,
+  initialValues,
   nextDisplayOrder,
   isSaving,
   onSave,
 }: ServiceFormDialogProps) {
+  const isEdit = Boolean(service);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto rounded-md sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add service</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit service' : 'Add service'}</DialogTitle>
           <DialogDescription>
-            Create a service for the website. English and German content are
-            both required — services go live as soon as they are saved.
+            {isEdit
+              ? 'Update the service. English and German content are both required — changes go live as soon as they are saved.'
+              : 'Create a service for the website. English and German content are both required — services go live as soon as they are saved.'}
           </DialogDescription>
         </DialogHeader>
 
         <ServiceFormContent
-          key="new"
+          key={service?.id ?? 'new'}
+          isEdit={isEdit}
+          service={service}
+          initialValues={initialValues}
           nextDisplayOrder={nextDisplayOrder}
           isSaving={isSaving}
           onOpenChange={onOpenChange}
@@ -107,12 +121,50 @@ function emptyLocaleValues(): ServiceFormValues['en'] {
   };
 }
 
+function serviceToValues(service: Service): ServiceFormValues {
+  return {
+    icon: (serviceIcons as readonly string[]).includes(service.icon)
+      ? (service.icon as ServiceIconKey)
+      : 'headset',
+    imageUrl: service.imageUrl,
+    alt: service.alt,
+    displayOrder: service.displayOrder,
+    en: localeToValues(service.content.en),
+    de: localeToValues(service.content.de),
+  };
+}
+
+function localeToValues(
+  locale: Service['content']['en'],
+): ServiceFormValues['en'] {
+  return {
+    slug: locale?.slug ?? '',
+    title: locale?.title ?? '',
+    subtitle: locale?.subtitle ?? '',
+    shortDescription: locale?.shortDescription ?? '',
+    details: locale?.details ?? '',
+    tag: locale?.tag ?? '',
+    body: locale?.body ?? '',
+    features:
+      locale && locale.features.length > 0
+        ? locale.features.map((feature) => ({ value: feature }))
+        : [{ value: '' }],
+    whoThisIsFor: locale?.whoThisIsFor ?? '',
+  };
+}
+
 function ServiceFormContent({
+  isEdit,
+  service,
+  initialValues,
   nextDisplayOrder,
   isSaving,
   onOpenChange,
   onSave,
 }: {
+  isEdit: boolean;
+  service?: Service | null;
+  initialValues?: ServiceFormValues | null;
   nextDisplayOrder: number;
   isSaving: boolean;
   onOpenChange: (open: boolean) => void;
@@ -124,7 +176,9 @@ function ServiceFormContent({
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceFormSchema),
     mode: 'onTouched',
-    defaultValues: emptyValues(nextDisplayOrder),
+    defaultValues:
+      initialValues ??
+      (service ? serviceToValues(service) : emptyValues(nextDisplayOrder)),
   });
 
   const values = useWatch({ control: form.control });
@@ -542,7 +596,13 @@ function ServiceFormContent({
           Cancel
         </Button>
         <Button type="submit" disabled={!canSubmit}>
-          {isSaving ? <Dots dots={3} /> : 'Create service'}
+          {isSaving ? (
+            <Dots dots={3} />
+          ) : isEdit ? (
+            'Save changes'
+          ) : (
+            'Create service'
+          )}
         </Button>
       </DialogFooter>
     </form>

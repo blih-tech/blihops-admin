@@ -16,6 +16,7 @@ import {
 import {
   createService,
   listServices,
+  updateService,
   type Service,
   type ServiceLocaleContent,
   type ServicesResponse,
@@ -33,6 +34,10 @@ export function ServicesList() {
   const queryClient = useQueryClient();
   const reduceMotion = useReducedMotion();
   const [formOpen, setFormOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [draftValues, setDraftValues] = useState<ServiceFormValues | null>(
+    null,
+  );
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   const { data, error, isPending, refetch } = useQuery({
@@ -104,6 +109,81 @@ export function ServicesList() {
     },
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: ServiceFormValues }) =>
+      updateServiceLocales(id, values),
+    onMutate: async ({ id, values }) => {
+      const previous = takeSnapshot<ServicesResponse>(
+        queryClient,
+        SERVICES_KEY,
+      );
+      queryClient.setQueryData<ServicesResponse>(SERVICES_KEY, (old) =>
+        old
+          ? {
+              ...old,
+              items: old.items.map((item) =>
+                item.id === id
+                  ? {
+                      ...item,
+                      icon: values.icon,
+                      imageUrl: values.imageUrl,
+                      alt: values.alt,
+                      displayOrder: values.displayOrder,
+                      content: {
+                        en: toServiceLocaleContent(values.en),
+                        de: toServiceLocaleContent(values.de),
+                      },
+                      updatedAt: new Date().toISOString(),
+                    }
+                  : item,
+              ),
+            }
+          : old,
+      );
+      setDraftValues(values);
+      setPendingId(id);
+      setFormOpen(false);
+      return { previous };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: SERVICES_KEY });
+      toastSuccess('Service updated');
+      setDraftValues(null);
+      setFormOpen(false);
+      setEditingService(null);
+    },
+    onError: (err, _variables, context) => {
+      if (context) {
+        restoreSnapshot(queryClient, SERVICES_KEY, context.previous);
+      }
+      setFormOpen(true);
+      toastError('Failed to update service', err.message);
+    },
+    onSettled: () => {
+      setPendingId(null);
+    },
+  });
+
+  function openCreate() {
+    setDraftValues(null);
+    setEditingService(null);
+    setFormOpen(true);
+  }
+
+  function openEdit(service: Service) {
+    setDraftValues(null);
+    setEditingService(service);
+    setFormOpen(true);
+  }
+
+  function handleSave(values: ServiceFormValues) {
+    if (editingService) {
+      editMutation.mutate({ id: editingService.id, values });
+    } else {
+      createMutation.mutate(values);
+    }
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -116,7 +196,7 @@ export function ServicesList() {
             goes live as soon as it is saved.
           </p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
+        <Button onClick={openCreate}>
           <PlusIcon data-icon="inline-start" />
           Add service
         </Button>
@@ -138,7 +218,7 @@ export function ServicesList() {
           title="No services yet"
           description="Add your first service to showcase your offerings on the website."
           action={
-            <Button onClick={() => setFormOpen(true)}>
+            <Button onClick={openCreate}>
               <PlusIcon data-icon="inline-start" />
               Add service
             </Button>
@@ -160,6 +240,7 @@ export function ServicesList() {
               <ServiceCard
                 service={service}
                 isPending={service.id === pendingId}
+                onEdit={openEdit}
               />
             </motion.div>
           ))}
@@ -169,9 +250,11 @@ export function ServicesList() {
       <ServiceFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
+        service={editingService}
+        initialValues={draftValues}
         nextDisplayOrder={nextDisplayOrder}
-        isSaving={createMutation.isPending}
-        onSave={(values) => createMutation.mutate(values)}
+        isSaving={createMutation.isPending || editMutation.isPending}
+        onSave={handleSave}
       />
     </div>
   );
@@ -188,6 +271,27 @@ function buildCreatePayload(values: ServiceFormValues) {
       de: toServiceLocaleContent(values.de),
     },
   };
+}
+
+async function updateServiceLocales(id: string, values: ServiceFormValues) {
+  const shared = {
+    icon: values.icon,
+    imageUrl: values.imageUrl,
+    alt: values.alt,
+    displayOrder: values.displayOrder,
+  };
+  // Sequential, not parallel: each PATCH is a read-modify-write of the same
+  // `content` JSON column, so concurrent requests would clobber each other's
+  // locale (last-writer-wins with stale data).
+  await updateService(id, {
+    ...shared,
+    locale: 'en',
+    content: toServiceLocaleContent(values.en),
+  });
+  await updateService(id, {
+    locale: 'de',
+    content: toServiceLocaleContent(values.de),
+  });
 }
 
 function toServiceLocaleContent(
