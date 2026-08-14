@@ -1,5 +1,5 @@
-import { UnderConstruction } from '@/components/shared/UnderConstruction';
+import { LeadsPage } from '@/components/sections/leads/leads-page';
 
-export default function LeadsPage() {
-  return <UnderConstruction title="Leads" />;
+export default function LeadsPageRoute() {
+  return <LeadsPage />;
 }
