@@ -2,3 +2,6 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   '@parcel/watcher': true
+
+overrides:
+  nanoid: ^3.3.18
