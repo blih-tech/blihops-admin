@@ -26,12 +26,16 @@ const DETAIL_LABELS: Record<string, string> = {
   timeline: 'Timeline',
   context: 'Context',
   bookingTime: 'Booking time',
+  bookingEndTime: 'Booking end',
   timezone: 'Timezone',
   bookingUrl: 'Booking URL',
+  meetingUrl: 'Meeting link',
   cancelledAt: 'Cancelled at',
   hearAbout: 'How they heard',
   teamSize: 'Team size',
 };
+
+const LINK_KEYS = new Set(['bookingUrl', 'meetingUrl']);
 
 type LeadDetailsDialogProps = {
   open: boolean;
@@ -113,7 +117,7 @@ export function LeadDetailsDialog({
                       label={DETAIL_LABELS[key] ?? key}
                       value={formatDetailValue(key, value)}
                       href={
-                        key === 'bookingUrl' &&
+                        LINK_KEYS.has(key) &&
                         typeof value === 'string' &&
                         value.length > 0
                           ? value
@@ -178,7 +182,11 @@ function formatDetailValue(key: string, value: unknown): string {
   if (typeof value !== 'string' || value.length === 0) {
     return '—';
   }
-  if (key === 'bookingTime' || key === 'cancelledAt') {
+  if (
+    key === 'bookingTime' ||
+    key === 'bookingEndTime' ||
+    key === 'cancelledAt'
+  ) {
     return formatDateTime(value);
   }
   return value;
