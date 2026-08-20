@@ -9,16 +9,22 @@ import {
   ChevronRightIcon,
   EllipsisVerticalIcon,
   EyeIcon,
+  FilePenLineIcon,
   InboxIcon,
   MailIcon,
   SearchIcon,
+  SendIcon,
+  UserPlusIcon,
   XIcon,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { InputGroup, InputGroupAddon } from '@/components/ui/input-group';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@/components/ui/input-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -32,6 +38,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -41,13 +48,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Dots } from '@/components/shared/Dots';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -56,7 +56,11 @@ import {
   fadeUpItem,
 } from '@/components/shared/motion-variants';
 import {
+  createTalentProfileFromApplication,
+  getTalentApplication,
   listTalentApplications,
+  sendTalentCompletionRequest,
+  updateTalentApplicationNotes,
   updateTalentApplicationStatus,
   type TalentApplicationListItem,
   type TalentApplicationStatus,
@@ -64,6 +68,11 @@ import {
 } from '@/lib/api/talent/applications';
 import { restoreSnapshot, takeSnapshot } from '@/lib/query/optimistic';
 import { toastError, toastSuccess } from '@/lib/toast';
+import { TalentApplicationDetailsDialog } from './talent-application-details-dialog';
+import { EditNotesDialog } from './edit-notes-dialog';
+import { SendCompletionRequestDialog } from './send-completion-request-dialog';
+import { CreateProfileDialog } from './create-profile-dialog';
+import type { CreateTalentProfileValues } from '@/lib/validators/talent';
 
 export const TALENT_APPLICATIONS_KEY = ['talent-applications'] as const;
 
@@ -183,6 +192,12 @@ export function TalentApplicationsTable() {
   const reduceMotion = useReducedMotion();
   const [detailsItem, setDetailsItem] =
     useState<TalentApplicationListItem | null>(null);
+  const [notesTarget, setNotesTarget] =
+    useState<TalentApplicationListItem | null>(null);
+  const [completionTarget, setCompletionTarget] =
+    useState<TalentApplicationListItem | null>(null);
+  const [createProfileTarget, setCreateProfileTarget] =
+    useState<TalentApplicationListItem | null>(null);
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<
     TalentApplicationStatus | 'ALL'
@@ -266,6 +281,66 @@ export function TalentApplicationsTable() {
     },
   });
 
+  const notesMutation = useMutation({
+    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
+      updateTalentApplicationNotes(id, notes),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: TALENT_APPLICATIONS_KEY,
+      });
+      if (notesTarget) {
+        void queryClient.invalidateQueries({
+          queryKey: ['talent-applications', 'detail', notesTarget.id],
+        });
+      }
+      toastSuccess('Notes saved');
+      setNotesTarget(null);
+    },
+    onError: (err: Error) => {
+      toastError('Failed to save notes', err.message);
+    },
+  });
+
+  const completionMutation = useMutation({
+    mutationFn: (id: string) => sendTalentCompletionRequest(id),
+    onSuccess: (res) => {
+      void queryClient.invalidateQueries({
+        queryKey: TALENT_APPLICATIONS_KEY,
+      });
+      toastSuccess(
+        'Completion request sent',
+        `Link expires ${new Date(res.data.expiresAt).toLocaleString('en-GB')}`,
+      );
+      setCompletionTarget(null);
+    },
+    onError: (err: Error) => {
+      toastError('Failed to send request', err.message);
+    },
+  });
+
+  const createProfileMutation = useMutation({
+    mutationFn: ({
+      id,
+      values,
+    }: {
+      id: string;
+      values: CreateTalentProfileValues;
+    }) => createTalentProfileFromApplication(id, values),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: TALENT_APPLICATIONS_KEY,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['talent-profiles'],
+      });
+      toastSuccess('Talent profile created');
+      setCreateProfileTarget(null);
+    },
+    onError: (err: Error) => {
+      toastError('Failed to create profile', err.message);
+    },
+  });
+
   function handleStatusChange(
     item: TalentApplicationListItem,
     status: TalentApplicationStatus,
@@ -294,7 +369,7 @@ export function TalentApplicationsTable() {
           <InputGroupAddon>
             <SearchIcon />
           </InputGroupAddon>
-          <Input
+          <InputGroupInput
             value={searchInput}
             onChange={(event) => {
               setSearchInput(event.target.value);
@@ -528,6 +603,28 @@ export function TalentApplicationsTable() {
                           <EyeIcon />
                           Details
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setNotesTarget(item)}
+                          className="focus:bg-muted focus:text-foreground"
+                        >
+                          <FilePenLineIcon />
+                          Edit notes
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setCompletionTarget(item)}
+                          className="focus:bg-muted focus:text-foreground"
+                        >
+                          <SendIcon />
+                          Send completion request
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setCreateProfileTarget(item)}
+                          className="focus:bg-muted focus:text-foreground"
+                        >
+                          <UserPlusIcon />
+                          Create profile
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -595,63 +692,61 @@ export function TalentApplicationsTable() {
         </div>
       )}
 
-      <Dialog
+      <TalentApplicationDetailsDialog
         open={Boolean(detailsItem)}
         onOpenChange={(open) => {
           if (!open) setDetailsItem(null);
         }}
-      >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{detailsItem?.fullName}</DialogTitle>
-            <DialogDescription>
-              {detailsItem?.primaryRole} · {detailsItem?.workEmail}
-            </DialogDescription>
-          </DialogHeader>
-          {detailsItem && (
-            <div className="grid gap-3 text-sm">
-              <div className="flex flex-wrap gap-2">
-                <span
-                  className={cn(
-                    badgeClassName,
-                    STATUS_BADGE[detailsItem.status].className,
-                  )}
-                >
-                  {STATUS_BADGE[detailsItem.status].label}
-                </span>
-                <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-                  {detailsItem.yearsExperience} years
-                </span>
-                <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-                  {detailsItem.city}, {detailsItem.country}
-                </span>
-              </div>
-              <dl className="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <dt className="font-mono text-[10px] tracking-wider text-muted-foreground uppercase">
-                    Phone
-                  </dt>
-                  <dd className="mt-0.5 text-foreground">
-                    {detailsItem.phone}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-mono text-[10px] tracking-wider text-muted-foreground uppercase">
-                    Created
-                  </dt>
-                  <dd className="mt-0.5 text-foreground">
-                    {formatDate(detailsItem.createdAt)}
-                  </dd>
-                </div>
-              </dl>
-              <p className="font-mono text-[10px] tracking-wider text-muted-foreground uppercase">
-                Full details, notes, completion request & create-profile will be
-                added in Step 4.
-              </p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        application={detailsItem}
+      />
+
+      <EditNotesDialog
+        open={Boolean(notesTarget)}
+        onOpenChange={(open) => {
+          if (!open) setNotesTarget(null);
+        }}
+        application={notesTarget}
+        isSaving={notesMutation.isPending}
+        onSave={(values) => {
+          if (notesTarget) {
+            notesMutation.mutate({
+              id: notesTarget.id,
+              notes: values.internalNotes,
+            });
+          }
+        }}
+      />
+
+      <SendCompletionRequestDialog
+        open={Boolean(completionTarget)}
+        onOpenChange={(open) => {
+          if (!open) setCompletionTarget(null);
+        }}
+        application={completionTarget}
+        isPending={completionMutation.isPending}
+        onConfirm={() => {
+          if (completionTarget) {
+            completionMutation.mutate(completionTarget.id);
+          }
+        }}
+      />
+
+      <CreateProfileDialog
+        open={Boolean(createProfileTarget)}
+        onOpenChange={(open) => {
+          if (!open) setCreateProfileTarget(null);
+        }}
+        application={createProfileTarget}
+        isSaving={createProfileMutation.isPending}
+        onSave={(values) => {
+          if (createProfileTarget) {
+            createProfileMutation.mutate({
+              id: createProfileTarget.id,
+              values,
+            });
+          }
+        }}
+      />
     </div>
   );
 }

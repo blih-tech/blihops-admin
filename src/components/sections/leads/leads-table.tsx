@@ -18,8 +18,11 @@ import {
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { InputGroup, InputGroupAddon } from '@/components/ui/input-group';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@/components/ui/input-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -302,7 +305,7 @@ export function LeadsTable() {
           <InputGroupAddon>
             <SearchIcon />
           </InputGroupAddon>
-          <Input
+          <InputGroupInput
             value={searchInput}
             onChange={(event) => {
               setSearchInput(event.target.value);
