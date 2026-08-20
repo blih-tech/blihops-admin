@@ -138,6 +138,16 @@ const STATUS_BADGE: Record<
   },
 };
 
+const SYSTEM_MANAGED_STATUSES: TalentApplicationStatus[] = [
+  'COMPLETION_REQUESTED',
+  'COMPLETION_SUBMITTED',
+  'PROFILE_CREATED',
+];
+
+const SYSTEM_MANAGED_SET = new Set<TalentApplicationStatus>(
+  SYSTEM_MANAGED_STATUSES,
+);
+
 const badgeClassName =
   'rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wider uppercase';
 
@@ -345,6 +355,7 @@ export function TalentApplicationsTable() {
     item: TalentApplicationListItem,
     status: TalentApplicationStatus,
   ) {
+    if (SYSTEM_MANAGED_SET.has(status)) return;
     if (status !== item.status && pendingStatusId !== item.id) {
       statusMutation.mutate({ id: item.id, status });
     }
@@ -552,29 +563,57 @@ export function TalentApplicationsTable() {
                           Change status for {item.fullName}
                         </span>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        {TALENT_APPLICATION_STATUSES.map((candidate) => (
-                          <DropdownMenuItem
-                            key={candidate}
-                            disabled={
-                              candidate === item.status || isPendingStatus
-                            }
-                            onClick={() => handleStatusChange(item, candidate)}
-                            className="focus:bg-muted focus:text-foreground"
-                          >
-                            <span
+                      <DropdownMenuContent
+                        align="start"
+                        className="max-h-[18rem] overflow-y-auto"
+                      >
+                        {TALENT_APPLICATION_STATUSES.map((candidate) => {
+                          const isSystemManaged =
+                            SYSTEM_MANAGED_SET.has(candidate);
+                          const isDisabled =
+                            candidate === item.status ||
+                            isPendingStatus ||
+                            isSystemManaged;
+                          return (
+                            <DropdownMenuItem
+                              key={candidate}
+                              disabled={isDisabled}
+                              onClick={() =>
+                                handleStatusChange(item, candidate)
+                              }
                               className={cn(
-                                'size-1.5 rounded-full',
-                                STATUS_BADGE[candidate].className,
+                                'focus:bg-muted focus:text-foreground',
+                                isSystemManaged && 'opacity-60',
                               )}
-                              aria-hidden="true"
-                            />
-                            {STATUS_BADGE[candidate].label}
-                            {candidate === item.status ? (
-                              <CheckIcon className="ml-auto size-3.5" />
-                            ) : null}
-                          </DropdownMenuItem>
-                        ))}
+                              title={
+                                isSystemManaged
+                                  ? 'Set automatically by the system (completion request / submission / profile creation)'
+                                  : undefined
+                              }
+                            >
+                              <span
+                                className={cn(
+                                  'size-1.5 rounded-full',
+                                  STATUS_BADGE[candidate].className,
+                                )}
+                                aria-hidden="true"
+                              />
+                              {STATUS_BADGE[candidate].label}
+                              {isSystemManaged && (
+                                <span className="ml-auto font-mono text-[9px] tracking-wider text-muted-foreground uppercase">
+                                  auto
+                                </span>
+                              )}
+                              {candidate === item.status ? (
+                                <CheckIcon className="ml-auto size-3.5" />
+                              ) : null}
+                            </DropdownMenuItem>
+                          );
+                        })}
+                        <DropdownMenuSeparator />
+                        <p className="px-2 py-1.5 font-mono text-[10px] leading-3 text-muted-foreground">
+                          Completion & profile statuses are set automatically
+                        </p>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
