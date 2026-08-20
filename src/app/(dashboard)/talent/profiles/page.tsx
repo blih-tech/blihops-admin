@@ -1,5 +1,5 @@
-import { UnderConstruction } from '@/components/shared/UnderConstruction';
+import { TalentProfilesPage } from '@/components/sections/talent/profiles/talent-profiles-page';
 
-export default function TalentProfilesPage() {
-  return <UnderConstruction title="Talent Profiles" />;
+export default function TalentProfilesRoute() {
+  return <TalentProfilesPage />;
 }
