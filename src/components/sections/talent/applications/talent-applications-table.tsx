@@ -414,7 +414,11 @@ export function TalentApplicationsTable() {
           }}
         >
           <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="All statuses" />
+            <SelectValue placeholder="All statuses">
+              {statusFilter === 'ALL'
+                ? 'All statuses'
+                : STATUS_BADGE[statusFilter].label}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All statuses</SelectItem>

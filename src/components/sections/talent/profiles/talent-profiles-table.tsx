@@ -356,7 +356,11 @@ export function TalentProfilesTable() {
           }}
         >
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Visibility" />
+            <SelectValue placeholder="Visibility">
+              {visibilityFilter === 'ALL'
+                ? 'All visibility'
+                : VISIBILITY_BADGE[visibilityFilter].label}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All visibility</SelectItem>
@@ -376,7 +380,11 @@ export function TalentProfilesTable() {
           }}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Account" />
+            <SelectValue placeholder="Account">
+              {accountFilter === 'ALL'
+                ? 'All accounts'
+                : ACCOUNT_BADGE[accountFilter].label}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All accounts</SelectItem>
